@@ -13,7 +13,16 @@ import { Route as LockedRouteImport } from './routes/locked'
 import { Route as AuthRouteImport } from './routes/auth'
 import { Route as AppRouteImport } from './routes/app'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as AppTransactionsRouteImport } from './routes/app.transactions'
+import { Route as AppSupportRouteImport } from './routes/app.support'
+import { Route as AppStatementsRouteImport } from './routes/app.statements'
+import { Route as AppSettingsRouteImport } from './routes/app.settings'
+import { Route as AppNotificationsRouteImport } from './routes/app.notifications'
+import { Route as AppLoansRouteImport } from './routes/app.loans'
+import { Route as AppInvestmentsRouteImport } from './routes/app.investments'
 import { Route as AppHomeRouteImport } from './routes/app.home'
+import { Route as AppDepositRouteImport } from './routes/app.deposit'
+import { Route as AppCardRouteImport } from './routes/app.card'
 
 const LockedRoute = LockedRouteImport.update({
   id: '/locked',
@@ -35,9 +44,54 @@ const IndexRoute = IndexRouteImport.update({
   path: '/',
   getParentRoute: () => rootRouteImport,
 } as any)
+const AppTransactionsRoute = AppTransactionsRouteImport.update({
+  id: '/transactions',
+  path: '/transactions',
+  getParentRoute: () => AppRoute,
+} as any)
+const AppSupportRoute = AppSupportRouteImport.update({
+  id: '/support',
+  path: '/support',
+  getParentRoute: () => AppRoute,
+} as any)
+const AppStatementsRoute = AppStatementsRouteImport.update({
+  id: '/statements',
+  path: '/statements',
+  getParentRoute: () => AppRoute,
+} as any)
+const AppSettingsRoute = AppSettingsRouteImport.update({
+  id: '/settings',
+  path: '/settings',
+  getParentRoute: () => AppRoute,
+} as any)
+const AppNotificationsRoute = AppNotificationsRouteImport.update({
+  id: '/notifications',
+  path: '/notifications',
+  getParentRoute: () => AppRoute,
+} as any)
+const AppLoansRoute = AppLoansRouteImport.update({
+  id: '/loans',
+  path: '/loans',
+  getParentRoute: () => AppRoute,
+} as any)
+const AppInvestmentsRoute = AppInvestmentsRouteImport.update({
+  id: '/investments',
+  path: '/investments',
+  getParentRoute: () => AppRoute,
+} as any)
 const AppHomeRoute = AppHomeRouteImport.update({
   id: '/home',
   path: '/home',
+  getParentRoute: () => AppRoute,
+} as any)
+const AppDepositRoute = AppDepositRouteImport.update({
+  id: '/deposit',
+  path: '/deposit',
+  getParentRoute: () => AppRoute,
+} as any)
+const AppCardRoute = AppCardRouteImport.update({
+  id: '/card',
+  path: '/card',
   getParentRoute: () => AppRoute,
 } as any)
 
@@ -46,14 +100,32 @@ export interface FileRoutesByFullPath {
   '/app': typeof AppRouteWithChildren
   '/auth': typeof AuthRoute
   '/locked': typeof LockedRoute
+  '/app/card': typeof AppCardRoute
+  '/app/deposit': typeof AppDepositRoute
   '/app/home': typeof AppHomeRoute
+  '/app/investments': typeof AppInvestmentsRoute
+  '/app/loans': typeof AppLoansRoute
+  '/app/notifications': typeof AppNotificationsRoute
+  '/app/settings': typeof AppSettingsRoute
+  '/app/statements': typeof AppStatementsRoute
+  '/app/support': typeof AppSupportRoute
+  '/app/transactions': typeof AppTransactionsRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/app': typeof AppRouteWithChildren
   '/auth': typeof AuthRoute
   '/locked': typeof LockedRoute
+  '/app/card': typeof AppCardRoute
+  '/app/deposit': typeof AppDepositRoute
   '/app/home': typeof AppHomeRoute
+  '/app/investments': typeof AppInvestmentsRoute
+  '/app/loans': typeof AppLoansRoute
+  '/app/notifications': typeof AppNotificationsRoute
+  '/app/settings': typeof AppSettingsRoute
+  '/app/statements': typeof AppStatementsRoute
+  '/app/support': typeof AppSupportRoute
+  '/app/transactions': typeof AppTransactionsRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -61,14 +133,66 @@ export interface FileRoutesById {
   '/app': typeof AppRouteWithChildren
   '/auth': typeof AuthRoute
   '/locked': typeof LockedRoute
+  '/app/card': typeof AppCardRoute
+  '/app/deposit': typeof AppDepositRoute
   '/app/home': typeof AppHomeRoute
+  '/app/investments': typeof AppInvestmentsRoute
+  '/app/loans': typeof AppLoansRoute
+  '/app/notifications': typeof AppNotificationsRoute
+  '/app/settings': typeof AppSettingsRoute
+  '/app/statements': typeof AppStatementsRoute
+  '/app/support': typeof AppSupportRoute
+  '/app/transactions': typeof AppTransactionsRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/' | '/app' | '/auth' | '/locked' | '/app/home'
+  fullPaths:
+    | '/'
+    | '/app'
+    | '/auth'
+    | '/locked'
+    | '/app/card'
+    | '/app/deposit'
+    | '/app/home'
+    | '/app/investments'
+    | '/app/loans'
+    | '/app/notifications'
+    | '/app/settings'
+    | '/app/statements'
+    | '/app/support'
+    | '/app/transactions'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/app' | '/auth' | '/locked' | '/app/home'
-  id: '__root__' | '/' | '/app' | '/auth' | '/locked' | '/app/home'
+  to:
+    | '/'
+    | '/app'
+    | '/auth'
+    | '/locked'
+    | '/app/card'
+    | '/app/deposit'
+    | '/app/home'
+    | '/app/investments'
+    | '/app/loans'
+    | '/app/notifications'
+    | '/app/settings'
+    | '/app/statements'
+    | '/app/support'
+    | '/app/transactions'
+  id:
+    | '__root__'
+    | '/'
+    | '/app'
+    | '/auth'
+    | '/locked'
+    | '/app/card'
+    | '/app/deposit'
+    | '/app/home'
+    | '/app/investments'
+    | '/app/loans'
+    | '/app/notifications'
+    | '/app/settings'
+    | '/app/statements'
+    | '/app/support'
+    | '/app/transactions'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -108,6 +232,55 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof IndexRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/app/transactions': {
+      id: '/app/transactions'
+      path: '/transactions'
+      fullPath: '/app/transactions'
+      preLoaderRoute: typeof AppTransactionsRouteImport
+      parentRoute: typeof AppRoute
+    }
+    '/app/support': {
+      id: '/app/support'
+      path: '/support'
+      fullPath: '/app/support'
+      preLoaderRoute: typeof AppSupportRouteImport
+      parentRoute: typeof AppRoute
+    }
+    '/app/statements': {
+      id: '/app/statements'
+      path: '/statements'
+      fullPath: '/app/statements'
+      preLoaderRoute: typeof AppStatementsRouteImport
+      parentRoute: typeof AppRoute
+    }
+    '/app/settings': {
+      id: '/app/settings'
+      path: '/settings'
+      fullPath: '/app/settings'
+      preLoaderRoute: typeof AppSettingsRouteImport
+      parentRoute: typeof AppRoute
+    }
+    '/app/notifications': {
+      id: '/app/notifications'
+      path: '/notifications'
+      fullPath: '/app/notifications'
+      preLoaderRoute: typeof AppNotificationsRouteImport
+      parentRoute: typeof AppRoute
+    }
+    '/app/loans': {
+      id: '/app/loans'
+      path: '/loans'
+      fullPath: '/app/loans'
+      preLoaderRoute: typeof AppLoansRouteImport
+      parentRoute: typeof AppRoute
+    }
+    '/app/investments': {
+      id: '/app/investments'
+      path: '/investments'
+      fullPath: '/app/investments'
+      preLoaderRoute: typeof AppInvestmentsRouteImport
+      parentRoute: typeof AppRoute
+    }
     '/app/home': {
       id: '/app/home'
       path: '/home'
@@ -115,15 +288,47 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AppHomeRouteImport
       parentRoute: typeof AppRoute
     }
+    '/app/deposit': {
+      id: '/app/deposit'
+      path: '/deposit'
+      fullPath: '/app/deposit'
+      preLoaderRoute: typeof AppDepositRouteImport
+      parentRoute: typeof AppRoute
+    }
+    '/app/card': {
+      id: '/app/card'
+      path: '/card'
+      fullPath: '/app/card'
+      preLoaderRoute: typeof AppCardRouteImport
+      parentRoute: typeof AppRoute
+    }
   }
 }
 
 interface AppRouteChildren {
+  AppCardRoute: typeof AppCardRoute
+  AppDepositRoute: typeof AppDepositRoute
   AppHomeRoute: typeof AppHomeRoute
+  AppInvestmentsRoute: typeof AppInvestmentsRoute
+  AppLoansRoute: typeof AppLoansRoute
+  AppNotificationsRoute: typeof AppNotificationsRoute
+  AppSettingsRoute: typeof AppSettingsRoute
+  AppStatementsRoute: typeof AppStatementsRoute
+  AppSupportRoute: typeof AppSupportRoute
+  AppTransactionsRoute: typeof AppTransactionsRoute
 }
 
 const AppRouteChildren: AppRouteChildren = {
+  AppCardRoute: AppCardRoute,
+  AppDepositRoute: AppDepositRoute,
   AppHomeRoute: AppHomeRoute,
+  AppInvestmentsRoute: AppInvestmentsRoute,
+  AppLoansRoute: AppLoansRoute,
+  AppNotificationsRoute: AppNotificationsRoute,
+  AppSettingsRoute: AppSettingsRoute,
+  AppStatementsRoute: AppStatementsRoute,
+  AppSupportRoute: AppSupportRoute,
+  AppTransactionsRoute: AppTransactionsRoute,
 }
 
 const AppRouteWithChildren = AppRoute._addFileChildren(AppRouteChildren)
