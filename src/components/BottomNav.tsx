@@ -28,7 +28,7 @@ export function BottomNav() {
             const active = item.to !== "__logout" && path.startsWith(item.to);
             if (item.center) {
               return (
-                <Link key={item.to} to={item.to} className="-mt-8">
+                <Link key={item.to} to={item.to as never} className="-mt-8">
                   <div className="neu-float w-16 h-16 rounded-full grid place-items-center" style={{ background: "var(--bg)" }}>
                     <Icon size={26} className="text-accent" />
                   </div>
@@ -46,7 +46,7 @@ export function BottomNav() {
               );
             }
             return (
-              <Link key={item.to} to={item.to} className="flex flex-col items-center gap-1.5 py-1 px-2">
+              <Link key={item.to} to={item.to as never} className="flex flex-col items-center gap-1.5 py-1 px-2">
                 <div className={`w-9 h-9 rounded-full grid place-items-center ${active ? "neu-pressed" : ""}`}>
                   <Icon size={18} className={active ? "text-accent" : "text-text-muted"} />
                 </div>
