@@ -5,13 +5,14 @@ import { NeuButton } from "./neu/NeuButton";
 import { useStore } from "@/lib/store";
 import { motion, AnimatePresence } from "framer-motion";
 
-const items = [
+type NavItem = { to: string; label: string; icon: typeof Home; center?: boolean };
+const items: NavItem[] = [
   { to: "/app/settings", label: "Settings", icon: Settings },
   { to: "/app/notifications", label: "Alerts", icon: Bell },
   { to: "/app/home", label: "Home", icon: Home, center: true },
   { to: "/app/support", label: "Support", icon: LifeBuoy },
   { to: "__logout", label: "Logout", icon: LogOut },
-] as const;
+];
 
 export function BottomNav() {
   const path = useRouterState({ select: s => s.location.pathname });
