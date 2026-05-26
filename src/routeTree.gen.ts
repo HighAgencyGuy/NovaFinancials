@@ -12,7 +12,9 @@ import { Route as rootRouteImport } from './routes/__root'
 import { Route as LockedRouteImport } from './routes/locked'
 import { Route as AuthRouteImport } from './routes/auth'
 import { Route as AppRouteImport } from './routes/app'
+import { Route as AdminRouteImport } from './routes/admin'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as AdminIndexRouteImport } from './routes/admin.index'
 import { Route as AppTransactionsRouteImport } from './routes/app.transactions'
 import { Route as AppSupportRouteImport } from './routes/app.support'
 import { Route as AppStatementsRouteImport } from './routes/app.statements'
@@ -23,6 +25,7 @@ import { Route as AppInvestmentsRouteImport } from './routes/app.investments'
 import { Route as AppHomeRouteImport } from './routes/app.home'
 import { Route as AppDepositRouteImport } from './routes/app.deposit'
 import { Route as AppCardRouteImport } from './routes/app.card'
+import { Route as AdminAccountIdRouteImport } from './routes/admin.account.$id'
 
 const LockedRoute = LockedRouteImport.update({
   id: '/locked',
@@ -39,10 +42,20 @@ const AppRoute = AppRouteImport.update({
   path: '/app',
   getParentRoute: () => rootRouteImport,
 } as any)
+const AdminRoute = AdminRouteImport.update({
+  id: '/admin',
+  path: '/admin',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const IndexRoute = IndexRouteImport.update({
   id: '/',
   path: '/',
   getParentRoute: () => rootRouteImport,
+} as any)
+const AdminIndexRoute = AdminIndexRouteImport.update({
+  id: '/',
+  path: '/',
+  getParentRoute: () => AdminRoute,
 } as any)
 const AppTransactionsRoute = AppTransactionsRouteImport.update({
   id: '/transactions',
@@ -94,9 +107,15 @@ const AppCardRoute = AppCardRouteImport.update({
   path: '/card',
   getParentRoute: () => AppRoute,
 } as any)
+const AdminAccountIdRoute = AdminAccountIdRouteImport.update({
+  id: '/account/$id',
+  path: '/account/$id',
+  getParentRoute: () => AdminRoute,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
+  '/admin': typeof AdminRouteWithChildren
   '/app': typeof AppRouteWithChildren
   '/auth': typeof AuthRoute
   '/locked': typeof LockedRoute
@@ -110,6 +129,8 @@ export interface FileRoutesByFullPath {
   '/app/statements': typeof AppStatementsRoute
   '/app/support': typeof AppSupportRoute
   '/app/transactions': typeof AppTransactionsRoute
+  '/admin/': typeof AdminIndexRoute
+  '/admin/account/$id': typeof AdminAccountIdRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
@@ -126,10 +147,13 @@ export interface FileRoutesByTo {
   '/app/statements': typeof AppStatementsRoute
   '/app/support': typeof AppSupportRoute
   '/app/transactions': typeof AppTransactionsRoute
+  '/admin': typeof AdminIndexRoute
+  '/admin/account/$id': typeof AdminAccountIdRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
+  '/admin': typeof AdminRouteWithChildren
   '/app': typeof AppRouteWithChildren
   '/auth': typeof AuthRoute
   '/locked': typeof LockedRoute
@@ -143,11 +167,14 @@ export interface FileRoutesById {
   '/app/statements': typeof AppStatementsRoute
   '/app/support': typeof AppSupportRoute
   '/app/transactions': typeof AppTransactionsRoute
+  '/admin/': typeof AdminIndexRoute
+  '/admin/account/$id': typeof AdminAccountIdRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
   fullPaths:
     | '/'
+    | '/admin'
     | '/app'
     | '/auth'
     | '/locked'
@@ -161,6 +188,8 @@ export interface FileRouteTypes {
     | '/app/statements'
     | '/app/support'
     | '/app/transactions'
+    | '/admin/'
+    | '/admin/account/$id'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
@@ -177,9 +206,12 @@ export interface FileRouteTypes {
     | '/app/statements'
     | '/app/support'
     | '/app/transactions'
+    | '/admin'
+    | '/admin/account/$id'
   id:
     | '__root__'
     | '/'
+    | '/admin'
     | '/app'
     | '/auth'
     | '/locked'
@@ -193,10 +225,13 @@ export interface FileRouteTypes {
     | '/app/statements'
     | '/app/support'
     | '/app/transactions'
+    | '/admin/'
+    | '/admin/account/$id'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
+  AdminRoute: typeof AdminRouteWithChildren
   AppRoute: typeof AppRouteWithChildren
   AuthRoute: typeof AuthRoute
   LockedRoute: typeof LockedRoute
@@ -225,12 +260,26 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AppRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/admin': {
+      id: '/admin'
+      path: '/admin'
+      fullPath: '/admin'
+      preLoaderRoute: typeof AdminRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/': {
       id: '/'
       path: '/'
       fullPath: '/'
       preLoaderRoute: typeof IndexRouteImport
       parentRoute: typeof rootRouteImport
+    }
+    '/admin/': {
+      id: '/admin/'
+      path: '/'
+      fullPath: '/admin/'
+      preLoaderRoute: typeof AdminIndexRouteImport
+      parentRoute: typeof AdminRoute
     }
     '/app/transactions': {
       id: '/app/transactions'
@@ -302,8 +351,27 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AppCardRouteImport
       parentRoute: typeof AppRoute
     }
+    '/admin/account/$id': {
+      id: '/admin/account/$id'
+      path: '/account/$id'
+      fullPath: '/admin/account/$id'
+      preLoaderRoute: typeof AdminAccountIdRouteImport
+      parentRoute: typeof AdminRoute
+    }
   }
 }
+
+interface AdminRouteChildren {
+  AdminIndexRoute: typeof AdminIndexRoute
+  AdminAccountIdRoute: typeof AdminAccountIdRoute
+}
+
+const AdminRouteChildren: AdminRouteChildren = {
+  AdminIndexRoute: AdminIndexRoute,
+  AdminAccountIdRoute: AdminAccountIdRoute,
+}
+
+const AdminRouteWithChildren = AdminRoute._addFileChildren(AdminRouteChildren)
 
 interface AppRouteChildren {
   AppCardRoute: typeof AppCardRoute
@@ -335,6 +403,7 @@ const AppRouteWithChildren = AppRoute._addFileChildren(AppRouteChildren)
 
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
+  AdminRoute: AdminRouteWithChildren,
   AppRoute: AppRouteWithChildren,
   AuthRoute: AuthRoute,
   LockedRoute: LockedRoute,
