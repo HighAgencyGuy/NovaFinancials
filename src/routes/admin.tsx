@@ -20,10 +20,8 @@ export const Route = createFileRoute("/admin")({
 });
 
 function AdminLayout() {
-  const u = useStore(s => s.users.find(x => x.id === s.currentUserId));
   const logout = useStore(s => s.logout);
   const nav = useNavigate();
-  useEffect(() => { if (!u || u.role !== "admin") nav({ to: "/auth" }); }, [u]);
 
   return (
     <div className="min-h-dvh pb-8" style={{ background: "var(--bg)" }}>
