@@ -12,16 +12,17 @@ export const Route = createFileRoute("/admin/")({
 });
 
 function AdminHome() {
-  const users = useStore(s => s.users.filter(u => u.role === "user"));
+  const allUsers = useStore(s => s.users);
+  const users = useMemo(() => allUsers.filter(u => u.role === "user"), [allUsers]);
   const approve = useStore(s => s.approveUser);
   const reject = useStore(s => s.rejectUser);
   const suspend = useStore(s => s.suspendUser);
   const reinstate = useStore(s => s.reinstateUser);
   const fund = useStore(s => s.fundAccount);
 
-  const pending = users.filter(u => u.status === "pending");
+  const pending = useMemo(() => users.filter(u => u.status === "pending"), [users]);
   const total = users.length;
-  const sysBalance = users.reduce((s, u) => s + u.balance, 0);
+  const sysBalance = useMemo(() => users.reduce((s, u) => s + u.balance, 0), [users]);
   const a1 = useCountUp(total, 700), a2 = useCountUp(pending.length, 700), a3 = useCountUp(sysBalance, 900);
 
   const [search, setSearch] = useState("");

@@ -1,6 +1,5 @@
 import { createFileRoute, Outlet, redirect, useNavigate } from "@tanstack/react-router";
 import { useStore } from "@/lib/store";
-import { useEffect } from "react";
 import { NeuButton } from "@/components/neu/NeuButton";
 import { Link } from "@tanstack/react-router";
 
@@ -20,10 +19,8 @@ export const Route = createFileRoute("/admin")({
 });
 
 function AdminLayout() {
-  const u = useStore(s => s.users.find(x => x.id === s.currentUserId));
   const logout = useStore(s => s.logout);
   const nav = useNavigate();
-  useEffect(() => { if (!u || u.role !== "admin") nav({ to: "/auth" }); }, [u]);
 
   return (
     <div className="min-h-dvh pb-8" style={{ background: "var(--bg)" }}>
