@@ -40,8 +40,9 @@ export function TransferSheet({ open, kind, onClose }: Props) {
   const receiptRef = useRef<HTMLDivElement>(null);
 
   const reset = () => {
-    setStep("form"); setRecipient(""); setRecipientName(""); setBank(banks[0]);
-    setSwift(""); setIban(""); setCountry(countries[0]); setCurrency(currencies[0]);
+    setStep("form"); setRecipient(""); setRecipientName("");
+    setCountry("United States"); setBank((banksByCountry["United States"] ?? banks)[0]);
+    setSwift(""); setIban(""); setCurrency("USD");
     setAmount(""); setNarration(""); setErr(null); setTxnId(null);
   };
   const close = () => { reset(); onClose(); };
