@@ -7,7 +7,7 @@ import { PinPad } from "../PinPad";
 import { ReceiptCard } from "../ReceiptCard";
 import { useCurrentUser, useStore } from "@/lib/store";
 import { NGN } from "@/lib/format";
-import { banks, countries, currencies } from "@/constants/tips";
+import { banks, banksByCountry, countries, currencies } from "@/constants/tips";
 import html2canvas from "html2canvas";
 
 type Kind = "local" | "wire";
