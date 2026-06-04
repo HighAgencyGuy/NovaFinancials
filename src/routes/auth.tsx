@@ -58,11 +58,11 @@ function AuthPage() {
     <main className="min-h-dvh grid place-items-center p-6" style={{ background: "var(--bg)" }}>
       <div className="w-full max-w-sm flex flex-col items-center gap-8">
         <div className="text-center">
-          <h1 className="neu-text-extrude font-display font-bold text-3xl tracking-[0.4em] pl-2">NOVA</h1>
-          <p className="label-caps mt-2 tracking-[0.3em]">Banking Reimagined</p>
+          <h1 className="neu-text-extrude font-display font-bold text-3xl tracking-[0.2em] pl-1">NOVA</h1>
+          <p className="mt-2 uppercase font-semibold" style={{ color: "var(--text-muted)", fontSize: "9px", letterSpacing: "0.15em" }}>Banking Reimagined</p>
         </div>
 
-        <div className="neu-deep rounded-full p-1.5 flex w-full relative">
+        <div className="neu-deep rounded-[12px] p-1 flex w-full relative">
           {(["signin", "register"] as Tab[]).map(t => (
             <button
               key={t}
@@ -73,24 +73,26 @@ function AuthPage() {
                 <motion.div
                   layoutId="tab-pill"
                   transition={{ type: "spring", stiffness: 400, damping: 30 }}
-                  className="absolute inset-0 neu-raised rounded-full"
+                  className="absolute inset-0 rounded-[9px]"
+                  style={{ background: "var(--text-dark)", boxShadow: "var(--neu-raised)" }}
                 />
               )}
-              <span className={`relative ${tab === t ? "text-accent" : "text-text-muted"}`}>
+              <span className="relative" style={{ color: tab === t ? "var(--bg)" : "var(--text-muted)" }}>
                 {t === "signin" ? "Sign In" : "Register"}
               </span>
             </button>
           ))}
         </div>
 
-        <div className="w-full neu-float rounded-[24px] p-6 flex flex-col gap-4" style={{ background: "var(--bg)" }}>
+        <div className="w-full neu-float rounded-[16px] p-6 flex flex-col gap-4">
           <AnimatePresence mode="wait">
             {tab === "signin" ? (
               <motion.div key="si" initial={{ opacity: 0, x: -20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: 20 }} className="flex flex-col gap-4">
                 <NeuInput label="Email" type="email" placeholder="you@email.com" value={email} onChange={e => setEmail(e.target.value)} />
                 <NeuInput label="Password" type="password" placeholder="••••••••" value={password} onChange={e => setPassword(e.target.value)} />
-                <NeuButton size="lg" tone="accent" className="w-full mt-2" onClick={handleSignIn}>Sign In</NeuButton>
+                <NeuButton size="lg" className="w-full mt-2 rounded-[12px]" style={{ background: "var(--text-dark)", color: "var(--bg)", letterSpacing: "0.05em" }} onClick={handleSignIn}>Sign In</NeuButton>
               </motion.div>
+
             ) : (
               <motion.div key="rg" initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -20 }} className="flex flex-col gap-4">
                 <NeuInput label="Full Name" placeholder="Jane Doe" value={fullName} onChange={e => setFullName(e.target.value)} />
@@ -115,7 +117,7 @@ function AuthPage() {
                   ]}
                 />
                 <NeuInput label="4-Digit Transaction PIN" type="password" inputMode="numeric" maxLength={4} placeholder="••••" value={pin} mono onChange={e => setPin(e.target.value.replace(/\D/g, ""))} />
-                <NeuButton size="lg" tone="accent" className="w-full mt-2" onClick={handleRegister}>Create Account</NeuButton>
+                <NeuButton size="lg" className="w-full mt-2 rounded-[12px]" style={{ background: "var(--text-dark)", color: "var(--bg)", letterSpacing: "0.05em" }} onClick={handleRegister}>Create Account</NeuButton>
               </motion.div>
             )}
           </AnimatePresence>
@@ -136,7 +138,7 @@ function AuthPage() {
           </AnimatePresence>
         </div>
 
-        <button onClick={fillAdmin} className="text-[10px] text-text-muted underline">
+        <button onClick={fillAdmin} className="text-[10px] underline" style={{ color: "var(--text-placeholder)" }}>
           Admin portal access
         </button>
       </div>

@@ -11,40 +11,44 @@
    ============================================================ */
 
 :root {
-  /* Base palette */
-  --bg: #dde1e7;
-  --bg-light: #e8ecf1;
-  --text-dark: #2d3748;
-  --text-mid: #4a5568;
-  --text-muted: #8a9bb0;
-  --accent: #6c63ff;
-  --accent-2: #4ecdc4;
-  --positive: #48bb78;
-  --negative: #fc8181;
-  --gold: #f6ad55;
+  /* Champagne palette */
+  --bg: #F0EAE0;
+  --bg-light: #EDE6DC;
+  --bg-inset: #E8E0D4;
+  --text-dark: #2C1810;
+  --text-mid: #6B4A30;
+  --text-muted: #A08060;
+  --text-placeholder: #C0A888;
+  --shadow-dark: #C8BFB0;
+  --shadow-light: #FFF8F0;
+  --accent: #2C1810;
+  --accent-2: #8B5A2B;
+  --positive: #6B8E4E;
+  --negative: #B5524A;
+  --gold: #B8894A;
 
-  /* Neumorphic shadow tokens */
+  /* Neumorphic shadow tokens — champagne */
   --neu-raised:
-    -6px -6px 14px rgba(255, 255, 255, 0.88),
-    6px 6px 14px rgba(163, 177, 198, 0.72);
+    5px 5px 14px #C8BFB0,
+    -4px -4px 12px #FFF8F0;
 
   --neu-float:
-    -10px -10px 24px rgba(255, 255, 255, 0.92),
-    10px 10px 24px rgba(163, 177, 198, 0.78);
+    8px 8px 22px #C8BFB0,
+    -6px -6px 18px #FFF8F0;
 
   --neu-pressed:
-    inset -3px -3px 7px rgba(255, 255, 255, 0.88),
-    inset 3px 3px 7px rgba(163, 177, 198, 0.72);
+    inset 2px 2px 5px #C8BFB0,
+    inset -1px -1px 4px #FFF8F0;
 
   --neu-deep:
-    inset -5px -5px 12px rgba(255, 255, 255, 0.88),
-    inset 5px 5px 12px rgba(163, 177, 198, 0.72);
+    inset 3px 3px 7px #C8BFB0,
+    inset -2px -2px 6px #FFF8F0;
 
   --neu-nav:
-    -4px -4px 10px rgba(255, 255, 255, 0.85),
-    4px 4px 10px rgba(163, 177, 198, 0.65);
+    4px 4px 10px #C8BFB0,
+    -3px -3px 8px #FFF8F0;
 
-  --neu-focus-ring: 0 0 0 3px rgba(108, 99, 255, 0.4);
+  --neu-focus-ring: 0 0 0 3px rgba(44, 24, 16, 0.25);
 
   /* Shadcn compat (kept neutral, not used directly in app) */
   --radius: 18px;
@@ -134,26 +138,28 @@
   .font-mono { font-family: var(--font-mono); }
   .font-display { font-family: var(--font-display); }
 
-  .neu-raised { background: var(--bg); box-shadow: var(--neu-raised); }
-  .neu-float { background: var(--bg); box-shadow: var(--neu-float); }
-  .neu-pressed { background: var(--bg); box-shadow: var(--neu-pressed); }
-  .neu-deep { background: var(--bg); box-shadow: var(--neu-deep); }
-  .neu-nav { background: var(--bg); box-shadow: var(--neu-nav); }
+  .neu-raised { background: var(--bg-light); box-shadow: var(--neu-raised); }
+  .neu-float { background: var(--bg-light); box-shadow: var(--neu-float); }
+  .neu-pressed { background: var(--bg-inset); box-shadow: var(--neu-pressed); }
+  .neu-deep { background: var(--bg-inset); box-shadow: var(--neu-deep); }
+  .neu-nav { background: var(--bg-light); box-shadow: var(--neu-nav); }
 
   .neu-text-extrude {
     color: var(--text-dark);
     text-shadow:
-      -2px -2px 5px rgba(255, 255, 255, 0.9),
-      2px 2px 5px rgba(163, 177, 198, 0.6);
+      -1px -1px 2px #FFF8F0,
+      2px 2px 4px #C8BFB0;
   }
 
   .label-caps {
     text-transform: uppercase;
-    letter-spacing: 0.04em;
+    letter-spacing: 0.1em;
     color: var(--text-muted);
-    font-size: 10px;
+    font-size: 9px;
     font-weight: 600;
   }
+
+  input::placeholder, textarea::placeholder { color: var(--text-placeholder); }
 
   /* Hide scrollbars on horizontal scroll strips */
   .no-scrollbar::-webkit-scrollbar { display: none; }
