@@ -119,8 +119,8 @@ export function TransferSheet({ open, kind, onClose }: Props) {
             ) : (
               <div className="grid grid-cols-2 gap-3">
                 <div className="col-span-2"><NeuInput label="Recipient Name" value={recipientName} onChange={e => setRecipientName(e.target.value)} placeholder="John Smith" /></div>
-                <NeuSelect label="Bank" value={bank} onChange={e => setBank(e.target.value)} options={banks.map(b => ({ value: b, label: b }))} />
-                <NeuSelect label="Country" value={country} onChange={e => setCountry(e.target.value)} options={countries.map(c => ({ value: c, label: c }))} />
+                <NeuSelect label="Country" value={country} onChange={e => { const c = e.target.value; setCountry(c); setBank((banksByCountry[c] ?? banks)[0]); }} options={countries.map(c => ({ value: c, label: c }))} />
+                <NeuSelect label="Bank" value={bank} onChange={e => setBank(e.target.value)} options={countryBanks.map(b => ({ value: b, label: b }))} />
                 <NeuInput label="SWIFT" value={swift} mono onChange={e => setSwift(e.target.value.toUpperCase())} placeholder="GTBINGLA" />
                 <NeuInput label="IBAN" value={iban} mono onChange={e => setIban(e.target.value.toUpperCase())} placeholder="GB29 ..." />
                 <div className="col-span-2"><NeuSelect label="Currency" value={currency} onChange={e => setCurrency(e.target.value)} options={currencies.map(c => ({ value: c, label: c }))} /></div>
