@@ -124,7 +124,7 @@ export function TransferSheet({ open, kind, onClose }: Props) {
                 <div className="col-span-2"><NeuSelect label="Currency" value={currency} onChange={e => setCurrency(e.target.value)} options={currencies.map(c => ({ value: c, label: c }))} /></div>
               </div>
             )}
-            <NeuInput label="Amount" prefix="₦" mono inputMode="decimal" value={amount} onChange={e => setAmount(e.target.value.replace(/[^\d.]/g, ""))} placeholder="0.00" hint={u ? `Available: ${NGN(u.balance)}` : ""} />
+            <NeuInput label="Amount" prefix="$" mono inputMode="decimal" value={amount} onChange={e => setAmount(e.target.value.replace(/[^\d.]/g, ""))} placeholder="0.00" hint={u ? `Available: ${NGN(u.balance)}` : ""} />
             <NeuTextarea label="Narration" rows={2} maxLength={80} value={narration} onChange={e => setNarration(e.target.value)} placeholder="What's it for?" />
             {kind === "wire" && (
               <div className="neu-pressed rounded-full px-4 py-2 text-xs text-text-muted self-start">Fee: {NGN(2500)}</div>

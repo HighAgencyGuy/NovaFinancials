@@ -41,7 +41,7 @@ function Deposit() {
         {step === "form" && (
           <motion.div key="f" initial={{opacity:0}} animate={{opacity:1}} exit={{opacity:0}} className="flex flex-col gap-4">
             <NeuCard className="p-5 flex flex-col gap-4">
-              <NeuInput label="Amount" prefix="₦" mono inputMode="decimal" value={amount} onChange={e => setAmount(e.target.value.replace(/[^\d.]/g,""))} />
+              <NeuInput label="Amount" prefix="$" mono inputMode="decimal" value={amount} onChange={e => setAmount(e.target.value.replace(/[^\d.]/g,""))} />
               <NeuInput label="Source" value={source} onChange={e => setSource(e.target.value)} />
             </NeuCard>
             <NeuButton size="lg" tone="accent" disabled={!Number(amount)} onClick={() => setStep("pin")}>Deposit</NeuButton>
