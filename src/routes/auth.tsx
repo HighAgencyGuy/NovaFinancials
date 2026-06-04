@@ -117,7 +117,7 @@ function AuthPage() {
                   ]}
                 />
                 <NeuInput label="4-Digit Transaction PIN" type="password" inputMode="numeric" maxLength={4} placeholder="••••" value={pin} mono onChange={e => setPin(e.target.value.replace(/\D/g, ""))} />
-                <NeuButton size="lg" tone="accent" className="w-full mt-2" onClick={handleRegister}>Create Account</NeuButton>
+                <NeuButton size="lg" className="w-full mt-2 rounded-[12px]" style={{ background: "var(--text-dark)", color: "var(--bg)", letterSpacing: "0.05em" }} onClick={handleRegister}>Create Account</NeuButton>
               </motion.div>
             )}
           </AnimatePresence>
