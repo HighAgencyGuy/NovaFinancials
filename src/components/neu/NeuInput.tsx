@@ -17,7 +17,7 @@ export const NeuInput = forwardRef<HTMLInputElement, InputProps>(
     return (
       <label className="flex flex-col gap-2 w-full">
         {label && <span className="label-caps">{label}</span>}
-        <div className="neu-deep rounded-[14px] flex items-center px-4 h-12">
+        <div className="neu-deep rounded-[10px] flex items-center px-4 h-12">
           {prefix && <span className="mr-2 text-text-muted">{prefix}</span>}
           <input
             ref={ref}
@@ -49,7 +49,7 @@ export const NeuTextarea = forwardRef<HTMLTextAreaElement, TextareaProps>(
   ({ label, hint, className = "", ...rest }, ref) => (
     <label className="flex flex-col gap-2 w-full">
       {label && <span className="label-caps">{label}</span>}
-      <div className="neu-deep rounded-[14px] px-4 py-3">
+      <div className="neu-deep rounded-[10px] px-4 py-3">
         <textarea
           ref={ref}
           className={`w-full bg-transparent outline-none placeholder:text-text-muted/60 text-text-dark resize-none ${className}`}
@@ -67,7 +67,7 @@ export const NeuSelect = forwardRef<HTMLSelectElement, SelectProps>(
   ({ label, options, className = "", ...rest }, ref) => (
     <label className="flex flex-col gap-2 w-full">
       {label && <span className="label-caps">{label}</span>}
-      <div className="neu-deep rounded-[14px] flex items-center px-4 h-12">
+      <div className="neu-deep rounded-[10px] flex items-center px-4 h-12">
         <select
           ref={ref}
           className={`flex-1 bg-transparent outline-none text-text-dark appearance-none ${className}`}
