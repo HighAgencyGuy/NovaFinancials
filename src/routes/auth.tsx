@@ -138,7 +138,7 @@ function AuthPage() {
           </AnimatePresence>
         </div>
 
-        <button onClick={fillAdmin} className="text-[10px] text-text-muted underline">
+        <button onClick={fillAdmin} className="text-[10px] underline" style={{ color: "var(--text-placeholder)" }}>
           Admin portal access
         </button>
       </div>
