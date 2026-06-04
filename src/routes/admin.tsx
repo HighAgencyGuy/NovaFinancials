@@ -1,6 +1,5 @@
 import { createFileRoute, Outlet, redirect, useNavigate } from "@tanstack/react-router";
 import { useStore } from "@/lib/store";
-import { useEffect } from "react";
 import { NeuButton } from "@/components/neu/NeuButton";
 import { Link } from "@tanstack/react-router";
 
