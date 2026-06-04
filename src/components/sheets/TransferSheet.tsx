@@ -27,11 +27,12 @@ export function TransferSheet({ open, kind, onClose }: Props) {
   const [step, setStep] = useState<Step>("form");
   const [recipient, setRecipient] = useState("");
   const [recipientName, setRecipientName] = useState("");
-  const [bank, setBank] = useState(banks[0]);
+  const [country, setCountry] = useState("United States");
+  const countryBanks = useMemo(() => banksByCountry[country] ?? banks, [country]);
+  const [bank, setBank] = useState(countryBanks[0]);
   const [swift, setSwift] = useState("");
   const [iban, setIban] = useState("");
-  const [country, setCountry] = useState(countries[0]);
-  const [currency, setCurrency] = useState(currencies[0]);
+  const [currency, setCurrency] = useState("USD");
   const [amount, setAmount] = useState("");
   const [narration, setNarration] = useState("");
   const [err, setErr] = useState<string | null>(null);
