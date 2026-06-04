@@ -1,4 +1,4 @@
-import { useState, useRef } from "react";
+import { useState, useRef, useMemo } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { BottomSheet } from "../BottomSheet";
 import { NeuInput, NeuSelect, NeuTextarea } from "../neu/NeuInput";
@@ -18,7 +18,11 @@ export function TransferSheet({ open, kind, onClose }: Props) {
   const u = useCurrentUser();
   const addTxn = useStore(s => s.addTransaction);
   const pushNotif = useStore(s => s.pushNotif);
-  const otherUsers = useStore(s => s.users.filter(x => x.role === "user" && x.id !== u?.id && x.status === "approved"));
+  const allUsers = useStore(s => s.users);
+  const otherUsers = useMemo(
+    () => allUsers.filter(x => x.role === "user" && x.id !== u?.id && x.status === "approved"),
+    [allUsers, u?.id]
+  );
 
   const [step, setStep] = useState<Step>("form");
   const [recipient, setRecipient] = useState("");
