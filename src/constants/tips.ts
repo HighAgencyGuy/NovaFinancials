@@ -30,7 +30,22 @@ export const countries = [
 
 export const currencies = ["USD", "EUR", "GBP", "NGN", "ZAR", "CAD", "AUD", "JPY", "AED"];
 
-export const banks = [
-  "First Bank", "GTBank", "Access Bank", "Zenith Bank", "UBA",
-  "Stanbic IBTC", "Fidelity Bank", "Wema Bank", "FCMB", "Sterling Bank",
-];
+export const banksByCountry: Record<string, string[]> = {
+  "United States": ["JPMorgan Chase", "Bank of America", "Wells Fargo", "Citibank", "U.S. Bank", "PNC Bank", "Capital One", "TD Bank"],
+  "United Kingdom": ["Barclays", "HSBC UK", "Lloyds Bank", "NatWest", "Santander UK", "Standard Chartered", "Monzo", "Revolut"],
+  "Germany": ["Deutsche Bank", "Commerzbank", "KfW", "DZ Bank", "N26", "ING-DiBa", "Sparkasse"],
+  "France": ["BNP Paribas", "Crédit Agricole", "Société Générale", "Crédit Mutuel", "La Banque Postale", "BPCE"],
+  "Canada": ["Royal Bank of Canada", "TD Canada Trust", "Scotiabank", "BMO", "CIBC", "National Bank of Canada"],
+  "Nigeria": ["First Bank", "GTBank", "Access Bank", "Zenith Bank", "UBA", "Stanbic IBTC", "Fidelity Bank", "Wema Bank", "FCMB", "Sterling Bank"],
+  "South Africa": ["Standard Bank", "FNB", "ABSA", "Nedbank", "Capitec Bank", "Investec"],
+  "Ghana": ["GCB Bank", "Ecobank Ghana", "Absa Ghana", "Stanbic Ghana", "Fidelity Ghana", "Zenith Ghana"],
+  "Kenya": ["Equity Bank", "KCB Bank", "Co-operative Bank", "Standard Chartered Kenya", "Absa Kenya", "NCBA"],
+  "UAE": ["Emirates NBD", "First Abu Dhabi Bank", "ADCB", "Mashreq", "Dubai Islamic Bank", "RAKBANK"],
+  "India": ["State Bank of India", "HDFC Bank", "ICICI Bank", "Axis Bank", "Kotak Mahindra", "Punjab National Bank"],
+  "China": ["ICBC", "China Construction Bank", "Agricultural Bank of China", "Bank of China", "Bank of Communications"],
+  "Japan": ["MUFG Bank", "Sumitomo Mitsui", "Mizuho Bank", "Japan Post Bank", "Resona Bank"],
+  "Australia": ["Commonwealth Bank", "Westpac", "ANZ", "NAB", "Macquarie Bank", "Bendigo Bank"],
+  "Singapore": ["DBS Bank", "OCBC Bank", "UOB", "Standard Chartered Singapore", "Citibank Singapore"],
+};
+
+export const banks = banksByCountry["Nigeria"];
