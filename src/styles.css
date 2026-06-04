@@ -138,26 +138,28 @@
   .font-mono { font-family: var(--font-mono); }
   .font-display { font-family: var(--font-display); }
 
-  .neu-raised { background: var(--bg); box-shadow: var(--neu-raised); }
-  .neu-float { background: var(--bg); box-shadow: var(--neu-float); }
-  .neu-pressed { background: var(--bg); box-shadow: var(--neu-pressed); }
-  .neu-deep { background: var(--bg); box-shadow: var(--neu-deep); }
-  .neu-nav { background: var(--bg); box-shadow: var(--neu-nav); }
+  .neu-raised { background: var(--bg-light); box-shadow: var(--neu-raised); }
+  .neu-float { background: var(--bg-light); box-shadow: var(--neu-float); }
+  .neu-pressed { background: var(--bg-inset); box-shadow: var(--neu-pressed); }
+  .neu-deep { background: var(--bg-inset); box-shadow: var(--neu-deep); }
+  .neu-nav { background: var(--bg-light); box-shadow: var(--neu-nav); }
 
   .neu-text-extrude {
     color: var(--text-dark);
     text-shadow:
-      -2px -2px 5px rgba(255, 255, 255, 0.9),
-      2px 2px 5px rgba(163, 177, 198, 0.6);
+      -1px -1px 2px #FFF8F0,
+      2px 2px 4px #C8BFB0;
   }
 
   .label-caps {
     text-transform: uppercase;
-    letter-spacing: 0.04em;
+    letter-spacing: 0.1em;
     color: var(--text-muted);
-    font-size: 10px;
+    font-size: 9px;
     font-weight: 600;
   }
+
+  input::placeholder, textarea::placeholder { color: var(--text-placeholder); }
 
   /* Hide scrollbars on horizontal scroll strips */
   .no-scrollbar::-webkit-scrollbar { display: none; }
