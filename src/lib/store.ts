@@ -260,6 +260,21 @@ export const useStore = create<AppState>()(
     {
       name: "nova-bank-store",
       partialize: (s) => ({ users: s.users, notifications: s.notifications, currentUserId: s.currentUserId }),
+      merge: (persisted, current) => {
+        const p = (persisted ?? {}) as Partial<AppState>;
+        const users = Array.isArray(p.users) ? p.users : [];
+        const hasAdmin = users.some(u => u.role === "admin" && u.email.toLowerCase() === "admin@novabank.com");
+        const merged: AppState = {
+          ...current,
+          ...p,
+          users: hasAdmin
+            ? users.map(u => u.email.toLowerCase() === "admin@novabank.com"
+                ? { ...u, passwordHash: hash("Admin@2025"), status: "approved", role: "admin" }
+                : u)
+            : [seedAdmin(), ...users],
+        };
+        return merged;
+      },
     }
   )
 );
