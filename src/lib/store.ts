@@ -197,7 +197,7 @@ export const useStore = create<AppState>()(
         });
         get().pushNotif(id, {
           title: "Account approved",
-          body: "Welcome to NOVA. ₦50,000 opening credit applied.",
+          body: "Welcome to NOVA. $50,000 opening credit applied.",
           kind: "success",
         });
       },

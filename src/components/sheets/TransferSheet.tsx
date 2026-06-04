@@ -7,7 +7,7 @@ import { PinPad } from "../PinPad";
 import { ReceiptCard } from "../ReceiptCard";
 import { useCurrentUser, useStore } from "@/lib/store";
 import { NGN } from "@/lib/format";
-import { banks, countries, currencies } from "@/constants/tips";
+import { banks, banksByCountry, countries, currencies } from "@/constants/tips";
 import html2canvas from "html2canvas";
 
 type Kind = "local" | "wire";
@@ -27,11 +27,12 @@ export function TransferSheet({ open, kind, onClose }: Props) {
   const [step, setStep] = useState<Step>("form");
   const [recipient, setRecipient] = useState("");
   const [recipientName, setRecipientName] = useState("");
-  const [bank, setBank] = useState(banks[0]);
+  const [country, setCountry] = useState("United States");
+  const countryBanks = useMemo(() => banksByCountry[country] ?? banks, [country]);
+  const [bank, setBank] = useState(countryBanks[0]);
   const [swift, setSwift] = useState("");
   const [iban, setIban] = useState("");
-  const [country, setCountry] = useState(countries[0]);
-  const [currency, setCurrency] = useState(currencies[0]);
+  const [currency, setCurrency] = useState("USD");
   const [amount, setAmount] = useState("");
   const [narration, setNarration] = useState("");
   const [err, setErr] = useState<string | null>(null);
@@ -39,8 +40,9 @@ export function TransferSheet({ open, kind, onClose }: Props) {
   const receiptRef = useRef<HTMLDivElement>(null);
 
   const reset = () => {
-    setStep("form"); setRecipient(""); setRecipientName(""); setBank(banks[0]);
-    setSwift(""); setIban(""); setCountry(countries[0]); setCurrency(currencies[0]);
+    setStep("form"); setRecipient(""); setRecipientName("");
+    setCountry("United States"); setBank((banksByCountry["United States"] ?? banks)[0]);
+    setSwift(""); setIban(""); setCurrency("USD");
     setAmount(""); setNarration(""); setErr(null); setTxnId(null);
   };
   const close = () => { reset(); onClose(); };
@@ -117,14 +119,14 @@ export function TransferSheet({ open, kind, onClose }: Props) {
             ) : (
               <div className="grid grid-cols-2 gap-3">
                 <div className="col-span-2"><NeuInput label="Recipient Name" value={recipientName} onChange={e => setRecipientName(e.target.value)} placeholder="John Smith" /></div>
-                <NeuSelect label="Bank" value={bank} onChange={e => setBank(e.target.value)} options={banks.map(b => ({ value: b, label: b }))} />
-                <NeuSelect label="Country" value={country} onChange={e => setCountry(e.target.value)} options={countries.map(c => ({ value: c, label: c }))} />
+                <NeuSelect label="Country" value={country} onChange={e => { const c = e.target.value; setCountry(c); setBank((banksByCountry[c] ?? banks)[0]); }} options={countries.map(c => ({ value: c, label: c }))} />
+                <NeuSelect label="Bank" value={bank} onChange={e => setBank(e.target.value)} options={countryBanks.map(b => ({ value: b, label: b }))} />
                 <NeuInput label="SWIFT" value={swift} mono onChange={e => setSwift(e.target.value.toUpperCase())} placeholder="GTBINGLA" />
                 <NeuInput label="IBAN" value={iban} mono onChange={e => setIban(e.target.value.toUpperCase())} placeholder="GB29 ..." />
                 <div className="col-span-2"><NeuSelect label="Currency" value={currency} onChange={e => setCurrency(e.target.value)} options={currencies.map(c => ({ value: c, label: c }))} /></div>
               </div>
             )}
-            <NeuInput label="Amount" prefix="₦" mono inputMode="decimal" value={amount} onChange={e => setAmount(e.target.value.replace(/[^\d.]/g, ""))} placeholder="0.00" hint={u ? `Available: ${NGN(u.balance)}` : ""} />
+            <NeuInput label="Amount" prefix="$" mono inputMode="decimal" value={amount} onChange={e => setAmount(e.target.value.replace(/[^\d.]/g, ""))} placeholder="0.00" hint={u ? `Available: ${NGN(u.balance)}` : ""} />
             <NeuTextarea label="Narration" rows={2} maxLength={80} value={narration} onChange={e => setNarration(e.target.value)} placeholder="What's it for?" />
             {kind === "wire" && (
               <div className="neu-pressed rounded-full px-4 py-2 text-xs text-text-muted self-start">Fee: {NGN(2500)}</div>

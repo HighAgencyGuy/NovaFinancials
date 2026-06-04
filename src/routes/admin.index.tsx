@@ -82,7 +82,7 @@ function AdminHome() {
               {users.filter(u => u.status === "approved").map(u => <option key={u.id} value={u.id}>{u.fullName} • {u.accountNumber}</option>)}
             </select>
           </div>
-          <NeuInput label="Amount" prefix="₦" mono value={fundAmt} onChange={e => setFundAmt(e.target.value.replace(/[^\d.]/g,""))} />
+          <NeuInput label="Amount" prefix="$" mono value={fundAmt} onChange={e => setFundAmt(e.target.value.replace(/[^\d.]/g,""))} />
           <NeuButton tone="accent" disabled={!fundId || !Number(fundAmt)} onClick={() => { fund(fundId, Number(fundAmt)); setFundAmt(""); }}>Fund</NeuButton>
         </div>
       </NeuCard>

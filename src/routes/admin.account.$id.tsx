@@ -78,7 +78,7 @@ function AcctDetail() {
       </NeuCard>
 
       <NeuCard className="p-5 grid grid-cols-1 md:grid-cols-4 gap-3 items-end">
-        <NeuInput label="Amount" prefix="₦" mono value={amt} onChange={e => setAmt(e.target.value.replace(/[^\d.]/g,""))} />
+        <NeuInput label="Amount" prefix="$" mono value={amt} onChange={e => setAmt(e.target.value.replace(/[^\d.]/g,""))} />
         <NeuInput label="Description" value={desc} onChange={e => setDesc(e.target.value)} />
         <NeuButton tone="positive" disabled={!Number(amt)} onClick={() => { fund(u.id, Number(amt)); setAmt(""); }}>Credit</NeuButton>
         <NeuButton tone="negative" disabled={!Number(amt) || Number(amt) > u.balance} onClick={() => { debit(u.id, Number(amt), desc); setAmt(""); }}>Debit</NeuButton>

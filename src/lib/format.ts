@@ -1,7 +1,7 @@
 export const NGN = (n: number) =>
-  new Intl.NumberFormat("en-NG", {
+  new Intl.NumberFormat("en-US", {
     style: "currency",
-    currency: "NGN",
+    currency: "USD",
     maximumFractionDigits: 2,
   }).format(n);
 
