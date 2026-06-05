@@ -20,9 +20,11 @@ function AuthPage() {
 
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
   const [fullName, setFullName] = useState("");
   const [accountType, setAccountType] = useState<AccountType>("Savings");
   const [pin, setPin] = useState("");
+  const [confirmPin, setConfirmPin] = useState("");
   const [err, setErr] = useState<string | null>(null);
   const [success, setSuccess] = useState(false);
 
@@ -43,7 +45,9 @@ function AuthPage() {
     if (!fullName.trim()) return setErr("Enter your full name");
     if (!/^.+@.+\..+$/.test(email)) return setErr("Enter a valid email");
     if (strength < 2) return setErr("Password too weak");
+    if (password !== confirmPassword) return setErr("Passwords do not match");
     if (!/^\d{4}$/.test(pin)) return setErr("PIN must be 4 digits");
+    if (pin !== confirmPin) return setErr("PINs do not match");
     const r = register({ fullName, email, password, accountType, pin });
     if (!r.ok) return setErr(r.error!);
     setSuccess(true);
