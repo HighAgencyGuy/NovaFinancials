@@ -42,7 +42,7 @@ function AdminHome() {
 
   return (
     <div className="flex flex-col gap-6">
-      <div className="grid grid-cols-3 gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
         {[
           { l: "Total Accounts", v: Math.round(a1).toString() },
           { l: "Pending Approval", v: Math.round(a2).toString() },
@@ -50,7 +50,7 @@ function AdminHome() {
         ].map(s => (
           <NeuCard key={s.l} variant="float" radius="xl" className="p-5">
             <p className="label-caps">{s.l}</p>
-            <p className="font-mono text-xl md:text-2xl font-semibold mt-2">{s.v}</p>
+            <p className="font-mono text-lg sm:text-xl md:text-2xl font-semibold mt-2 break-all">{s.v}</p>
           </NeuCard>
         ))}
       </div>
@@ -59,14 +59,18 @@ function AdminHome() {
         <section className="flex flex-col gap-3">
           <h2 className="font-display font-semibold">Pending Approvals</h2>
           {pending.map(p => (
-            <NeuCard key={p.id} className="p-4 flex items-center gap-3">
-              <div className="neu-pressed rounded-full w-11 h-11 grid place-items-center text-accent font-semibold">{p.fullName.split(" ").map(s => s[0]).slice(0,2).join("")}</div>
-              <div className="flex-1 min-w-0">
-                <p className="font-semibold text-sm">{p.fullName}</p>
-                <p className="text-[11px] text-text-muted">{p.email} • {p.accountType}</p>
+            <NeuCard key={p.id} className="p-4 flex flex-col sm:flex-row sm:items-center gap-3">
+              <div className="flex items-center gap-3 min-w-0 flex-1">
+                <div className="neu-pressed rounded-full w-11 h-11 grid place-items-center text-accent font-semibold shrink-0">{p.fullName.split(" ").map(s => s[0]).slice(0,2).join("")}</div>
+                <div className="min-w-0 flex-1">
+                  <p className="font-semibold text-sm truncate">{p.fullName}</p>
+                  <p className="text-[11px] text-text-muted truncate">{p.email} • {p.accountType}</p>
+                </div>
               </div>
-              <NeuButton size="sm" tone="positive" onClick={() => approve(p.id)}>Approve</NeuButton>
-              <NeuButton size="sm" tone="negative" onClick={() => reject(p.id)}>Reject</NeuButton>
+              <div className="flex gap-2 shrink-0">
+                <NeuButton size="sm" tone="positive" onClick={() => approve(p.id)}>Approve</NeuButton>
+                <NeuButton size="sm" tone="negative" onClick={() => reject(p.id)}>Reject</NeuButton>
+              </div>
             </NeuCard>
           ))}
         </section>
@@ -74,7 +78,7 @@ function AdminHome() {
 
       <NeuCard variant="float" className="p-5 flex flex-col gap-3">
         <h2 className="font-display font-semibold">Fund Account</h2>
-        <div className="grid grid-cols-[1fr_180px_auto] gap-3 items-end">
+        <div className="grid grid-cols-1 sm:grid-cols-[1fr_180px_auto] gap-3 items-end">
           <div>
             <p className="label-caps mb-2">Account</p>
             <select value={fundId} onChange={e => setFundId(e.target.value)} className="neu-deep rounded-[14px] h-12 px-4 w-full bg-transparent outline-none">
@@ -83,14 +87,14 @@ function AdminHome() {
             </select>
           </div>
           <NeuInput label="Amount" prefix="$" mono value={fundAmt} onChange={e => setFundAmt(e.target.value.replace(/[^\d.]/g,""))} />
-          <NeuButton tone="accent" disabled={!fundId || !Number(fundAmt)} onClick={() => { fund(fundId, Number(fundAmt)); setFundAmt(""); }}>Fund</NeuButton>
+          <NeuButton tone="accent" className="w-full sm:w-auto" disabled={!fundId || !Number(fundAmt)} onClick={() => { fund(fundId, Number(fundAmt)); setFundAmt(""); }}>Fund</NeuButton>
         </div>
       </NeuCard>
 
       <section className="flex flex-col gap-3">
-        <div className="flex items-center justify-between gap-3">
-          <h2 className="font-display font-semibold">Accounts</h2>
-          <div className="w-64"><NeuInput placeholder="Search name, email, account" value={search} onChange={e => setSearch(e.target.value)} /></div>
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+          <h2 className="font-display font-semibold shrink-0">Accounts</h2>
+          <div className="w-full sm:w-64"><NeuInput placeholder="Search name, email, account" value={search} onChange={e => setSearch(e.target.value)} /></div>
         </div>
         <div className="hidden md:grid grid-cols-[1.5fr_1fr_1fr_120px_auto] gap-3 px-4 label-caps">
           {(["fullName","email","balance","status"] as const).map(k => (
@@ -114,7 +118,7 @@ function AdminHome() {
                 u.status === "pending" ? "text-gold" :
                 u.status === "suspended" ? "text-negative" : "text-text-muted"
               }`}>{u.status}</span>
-              <div className="flex gap-2">
+              <div className="flex flex-wrap gap-2">
                 <Link to="/admin/account/$id" params={{ id: u.id }}><NeuButton size="sm">View</NeuButton></Link>
                 {u.status === "approved"
                   ? <NeuButton size="sm" tone="negative" onClick={() => suspend(u.id)}>Suspend</NeuButton>

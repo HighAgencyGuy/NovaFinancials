@@ -23,15 +23,15 @@ function AdminLayout() {
   const nav = useNavigate();
 
   return (
-    <div className="min-h-dvh pb-8" style={{ background: "var(--bg)" }}>
-      <header className="sticky top-0 z-20 px-6 py-4 flex items-center justify-between neu-nav" style={{ background: "var(--bg)" }}>
-        <div className="flex items-center gap-3">
-          <Link to="/admin" className="font-display font-bold tracking-[0.3em] neu-text-extrude">NOVA</Link>
-          <span className="neu-pressed rounded-full px-3 py-1 text-[10px] uppercase tracking-wider text-gold font-semibold">Master Control</span>
+    <div className="min-h-dvh pb-8 overflow-x-hidden" style={{ background: "var(--bg)" }}>
+      <header className="sticky top-0 z-20 px-4 sm:px-6 py-4 flex flex-wrap items-center justify-between gap-3 neu-nav" style={{ background: "var(--bg)" }}>
+        <div className="flex items-center gap-2 sm:gap-3 min-w-0">
+          <Link to="/admin" className="font-display font-bold tracking-[0.3em] neu-text-extrude shrink-0">NOVA</Link>
+          <span className="neu-pressed rounded-full px-2 sm:px-3 py-1 text-[9px] sm:text-[10px] uppercase tracking-wider text-gold font-semibold truncate">Master Control</span>
         </div>
-        <NeuButton size="sm" tone="negative" onClick={() => { logout(); nav({ to: "/auth" }); }}>Sign Out</NeuButton>
+        <NeuButton size="sm" tone="negative" className="shrink-0" onClick={() => { logout(); nav({ to: "/auth" }); }}>Sign Out</NeuButton>
       </header>
-      <main className="max-w-5xl mx-auto px-6 pt-6">
+      <main className="max-w-5xl mx-auto px-4 sm:px-6 pt-6">
         <Outlet />
       </main>
     </div>

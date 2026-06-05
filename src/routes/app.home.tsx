@@ -20,6 +20,7 @@ function Home() {
   const unread = useStore(s => (s.notifications[u?.id ?? ""] ?? []).filter(n => !n.read).length);
   const balanceAnim = useCountUp(u?.balance ?? 0);
   const [reveal, setReveal] = useState(false);
+  const [balanceVisible, setBalanceVisible] = useState(true);
   const [sheet, setSheet] = useState<null | "local" | "wire">(null);
   const [detailTxn, setDetailTxn] = useState<Transaction | null>(null);
   const nav = useNavigate();
@@ -63,17 +64,29 @@ function Home() {
         <div className="absolute -top-16 -right-16 w-56 h-56 rounded-full opacity-20" style={{ background: "radial-gradient(circle, #C9A66B 0%, transparent 70%)" }} />
         <div className="flex items-start justify-between gap-3 relative">
           <div className="min-w-0 flex-1">
-            <p className="uppercase font-semibold" style={{ color: "#C0A888", fontSize: "9px", letterSpacing: "0.15em" }}>Available Balance</p>
+            <div className="flex items-center gap-2">
+              <p className="uppercase font-semibold" style={{ color: "#C0A888", fontSize: "9px", letterSpacing: "0.15em" }}>Available Balance</p>
+              <button
+                aria-label={balanceVisible ? "Hide balance" : "Show balance"}
+                onClick={() => setBalanceVisible(v => !v)}
+                className="rounded-full w-7 h-7 grid place-items-center"
+                style={{ background: "rgba(255,248,240,0.08)", color: "#A08060", boxShadow: "inset 1px 1px 3px rgba(0,0,0,0.5), 1px 1px 2px rgba(255,255,255,0.04)" }}
+              >
+                {balanceVisible ? <EyeOff size={12} /> : <Eye size={12} />}
+              </button>
+            </div>
             <p
               className="font-mono font-semibold mt-2 tabular-nums break-all"
-              style={{ color: "#F0EAE0", fontSize: "clamp(1.6rem, 8vw, 2.4rem)", lineHeight: 1.1 }}
+              style={{ color: "#F0EAE0", fontSize: "clamp(1.1rem, 5vw, 1.65rem)", lineHeight: 1.1 }}
               aria-live="polite"
             >
-              {NGN(balanceAnim)}
+              {balanceVisible ? NGN(balanceAnim) : "••••••••"}
             </p>
-            <p className="text-[10px] mt-1.5" style={{ color: "#A08060" }}>
-              Ledger: <span className="font-mono">{NGN(u.balance)}</span>
-            </p>
+            {balanceVisible && (
+              <p className="text-[10px] mt-1.5" style={{ color: "#A08060" }}>
+                Ledger: <span className="font-mono">{NGN(u.balance)}</span>
+              </p>
+            )}
           </div>
           <div
             className="rounded-full px-3 py-1 text-[10px] font-semibold uppercase tracking-wider shrink-0"
@@ -110,9 +123,9 @@ function Home() {
               initial={{opacity:0,y:8}} animate={{opacity:1,y:0}} transition={{delay:0.05*i}}
               whileTap={{ scale: 0.96 }} onClick={a.on}
               className="rounded-[14px] py-3 flex flex-col items-center gap-1.5"
-              style={{ background: "rgba(255,248,240,0.08)", color: "#E8D5B7", boxShadow: "inset 1px 1px 3px rgba(0,0,0,0.45), 2px 2px 5px rgba(0,0,0,0.3)" }}>
-              <a.icon size={18} />
-              <span className="text-[10px] font-semibold">{a.label}</span>
+              style={{ background: "rgba(255,248,240,0.08)", color: "#A08060", boxShadow: "inset 1px 1px 3px rgba(0,0,0,0.45), 2px 2px 5px rgba(0,0,0,0.3)" }}>
+              <a.icon size={18} style={{ color: "#A08060" }} />
+              <span className="text-[10px] font-semibold" style={{ color: "#A08060" }}>{a.label}</span>
             </motion.button>
           ))}
         </div>

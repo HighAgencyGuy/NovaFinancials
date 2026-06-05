@@ -29,7 +29,10 @@ export function BottomNav() {
             if (item.center) {
               return (
                 <Link key={item.to} to={item.to as never} className="-mt-8">
-                  <div className="neu-float w-16 h-16 rounded-full grid place-items-center" style={{ background: "var(--bg)" }}>
+                  <div
+                    className={`w-16 h-16 rounded-full grid place-items-center ${active ? "neu-pressed" : "neu-float"} active:[box-shadow:var(--neu-pressed)]`}
+                    style={{ background: active ? "var(--bg-inset)" : "var(--bg)" }}
+                  >
                     <Icon size={26} className="text-accent" />
                   </div>
                 </Link>
@@ -38,7 +41,10 @@ export function BottomNav() {
             if (item.to === "__logout") {
               return (
                 <button key="logout" onClick={() => setConfirm(true)} className="flex flex-col items-center gap-1.5 py-1 px-2">
-                  <div className="w-9 h-9 rounded-full grid place-items-center text-text-muted">
+                  <div
+                    className="w-9 h-9 rounded-full grid place-items-center neu-float text-text-muted active:[box-shadow:var(--neu-pressed)]"
+                    style={{ background: "var(--bg-light)" }}
+                  >
                     <Icon size={18} />
                   </div>
                   <span className="text-[10px] text-text-muted">{item.label}</span>
@@ -47,7 +53,10 @@ export function BottomNav() {
             }
             return (
               <Link key={item.to} to={item.to as never} className="flex flex-col items-center gap-1.5 py-1 px-2">
-                <div className={`w-9 h-9 rounded-full grid place-items-center ${active ? "neu-pressed" : ""}`}>
+                <div
+                  className={`w-9 h-9 rounded-full grid place-items-center ${active ? "neu-pressed" : "neu-float"} active:[box-shadow:var(--neu-pressed)]`}
+                  style={{ background: active ? "var(--bg-inset)" : "var(--bg-light)" }}
+                >
                   <Icon size={18} className={active ? "text-accent" : "text-text-muted"} />
                 </div>
                 <span className={`text-[10px] ${active ? "text-accent font-semibold" : "text-text-muted"}`}>{item.label}</span>

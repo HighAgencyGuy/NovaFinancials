@@ -49,15 +49,15 @@ function AcctDetail() {
 
   return (
     <div className="flex flex-col gap-6">
-      <header className="flex items-center justify-between gap-3">
-        <div className="flex items-center gap-3">
-          <Link to="/admin" className="neu-raised w-10 h-10 rounded-full grid place-items-center active:[box-shadow:var(--neu-pressed)]"><ChevronLeft size={18} /></Link>
-          <div>
-            <h1 className="font-display font-semibold text-lg">{u.fullName}</h1>
-            <p className="text-[11px] text-text-muted font-mono">{u.accountNumber} • {u.email}</p>
+      <header className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+        <div className="flex items-center gap-3 min-w-0">
+          <Link to="/admin" className="neu-raised w-10 h-10 rounded-full grid place-items-center shrink-0 active:[box-shadow:var(--neu-pressed)]"><ChevronLeft size={18} /></Link>
+          <div className="min-w-0">
+            <h1 className="font-display font-semibold text-lg truncate">{u.fullName}</h1>
+            <p className="text-[11px] text-text-muted font-mono truncate">{u.accountNumber} • {u.email}</p>
           </div>
         </div>
-        <NeuButton size="sm" onClick={exportJson}><Download size={14} /> Export JSON</NeuButton>
+        <NeuButton size="sm" className="shrink-0 self-start sm:self-auto" onClick={exportJson}><Download size={14} /> Export JSON</NeuButton>
       </header>
 
       <NeuCard variant="float" radius="xl" className="p-5">
@@ -91,12 +91,12 @@ function AcctDetail() {
         <h2 className="font-display font-semibold mb-3">Transactions</h2>
         <div className="flex flex-col gap-2">
           {slice.map(t => (
-            <NeuCard key={t.id} className="p-3 flex items-center justify-between gap-3 text-xs">
+            <NeuCard key={t.id} className="p-3 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 sm:gap-3 text-xs">
               <div className="min-w-0 flex-1">
                 <p className="font-semibold truncate">{t.description}</p>
-                <p className="text-text-muted">{timeAgo(t.timestamp)} • {t.reference} • {t.counterparty}</p>
+                <p className="text-text-muted truncate">{timeAgo(t.timestamp)} • {t.reference} • {t.counterparty}</p>
               </div>
-              <p className={`font-mono font-semibold ${t.type === "credit" ? "text-positive" : "text-negative"}`}>{t.type === "credit" ? "+" : "-"}{NGN(t.amount)}</p>
+              <p className={`font-mono font-semibold shrink-0 ${t.type === "credit" ? "text-positive" : "text-negative"}`}>{t.type === "credit" ? "+" : "-"}{NGN(t.amount)}</p>
             </NeuCard>
           ))}
           {txns.length === 0 && <NeuCard className="p-6 text-center text-xs text-text-muted">No transactions yet.</NeuCard>}
