@@ -81,8 +81,11 @@ export function TransferSheet({ open, kind, onClose }: Props) {
     if (!u) return;
     const amt = Number(amount);
     const fee = kind === "wire" ? 2500 : 0;
+    const localRecipient = recipientMode === "select"
+      ? otherUsers.find(x => x.id === recipient)
+      : verifiedUser;
     const counterparty = kind === "local"
-      ? (otherUsers.find(x => x.id === recipient)?.fullName ?? "Recipient")
+      ? (localRecipient?.fullName ?? "Recipient")
       : `${recipientName} (${bank})`;
     const txn = addTxn(u.id, {
       type: "debit",
@@ -95,14 +98,11 @@ export function TransferSheet({ open, kind, onClose }: Props) {
     if (fee > 0) {
       addTxn(u.id, { type: "debit", category: "fee", amount: fee, description: "Wire transfer fee", counterparty: "NOVA Bank", status: "completed" });
     }
-    if (kind === "local" && txn) {
-      const r = otherUsers.find(x => x.id === recipient);
-      if (r) {
-        addTxn(r.id, { type: "credit", category: "transfer", amount: amt, description: narration || "Transfer received", counterparty: u.fullName, status: "completed" });
-        pushNotif(r.id, { title: "Money received", body: `${u.fullName} sent you ${NGN(amt)}`, kind: "success" });
-      }
+    if (kind === "local" && txn && localRecipient) {
+      const rtxn = addTxn(localRecipient.id, { type: "credit", category: "transfer", amount: amt, description: narration || "Transfer received", counterparty: u.fullName, status: "completed" });
+      pushNotif(localRecipient.id, { title: "Money received", body: `${u.fullName} sent you ${NGN(amt)}`, kind: "success", txnId: rtxn?.id });
     }
-    pushNotif(u.id, { title: kind === "wire" ? "Wire submitted" : "Transfer sent", body: `${NGN(amt)} to ${counterparty}`, kind: "success" });
+    pushNotif(u.id, { title: kind === "wire" ? "Wire submitted" : "Transfer sent", body: `${NGN(amt)} to ${counterparty}`, kind: "success", txnId: txn?.id });
     setTxnId(txn?.id ?? null);
     setStep("success");
   };
@@ -125,12 +125,45 @@ export function TransferSheet({ open, kind, onClose }: Props) {
         {step === "form" && (
           <motion.div key="form" initial={{ opacity: 0, x: -10 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: 10 }} className="flex flex-col gap-4">
             {kind === "local" ? (
-              <NeuSelect
-                label="Recipient"
-                value={recipient}
-                onChange={e => setRecipient(e.target.value)}
-                options={[{ value: "", label: "Select recipient" }, ...otherUsers.map(x => ({ value: x.id, label: `${x.fullName} • ${x.accountNumber}` }))]}
-              />
+              <div className="flex flex-col gap-3">
+                <div className="neu-deep rounded-full p-1 flex">
+                  {(["manual", "select"] as const).map(m => (
+                    <button key={m} onClick={() => setRecipientMode(m)} type="button"
+                      className={`flex-1 h-8 text-[10px] font-semibold uppercase tracking-wider rounded-full ${recipientMode === m ? "neu-raised text-accent" : "text-text-muted"}`}>
+                      {m === "manual" ? "Account #" : "Saved"}
+                    </button>
+                  ))}
+                </div>
+                {recipientMode === "manual" ? (
+                  <div className="flex flex-col gap-2">
+                    <NeuInput label="Recipient Account Number" mono value={accountNumber}
+                      onChange={e => setAccountNumber(e.target.value.trim())}
+                      placeholder="NOVA-XXXXXXXXXX" />
+                    {accountNumber.length >= 4 && (
+                      verifiedUser ? (
+                        <div className="neu-pressed rounded-[12px] px-4 py-3 flex items-center gap-3">
+                          <div className="w-8 h-8 rounded-full grid place-items-center text-[11px] font-semibold neu-raised text-accent shrink-0">
+                            {verifiedUser.fullName.split(" ").map(s => s[0]).slice(0,2).join("")}
+                          </div>
+                          <div className="min-w-0 flex-1">
+                            <p className="text-sm font-semibold truncate" style={{ color: "var(--positive)" }}>✓ {verifiedUser.fullName}</p>
+                            <p className="text-[10px] text-text-muted truncate">{verifiedUser.accountType} • Verified</p>
+                          </div>
+                        </div>
+                      ) : (
+                        <p className="text-[10px] text-negative px-2">Account not found</p>
+                      )
+                    )}
+                  </div>
+                ) : (
+                  <NeuSelect
+                    label="Recipient"
+                    value={recipient}
+                    onChange={e => setRecipient(e.target.value)}
+                    options={[{ value: "", label: "Select recipient" }, ...otherUsers.map(x => ({ value: x.id, label: `${x.fullName} • ${x.accountNumber}` }))]}
+                  />
+                )}
+              </div>
             ) : (
               <div className="grid grid-cols-2 gap-3">
                 <div className="col-span-2"><NeuInput label="Recipient Name" value={recipientName} onChange={e => setRecipientName(e.target.value)} placeholder="John Smith" /></div>
