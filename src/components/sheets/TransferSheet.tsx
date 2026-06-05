@@ -25,7 +25,9 @@ export function TransferSheet({ open, kind, onClose }: Props) {
   );
 
   const [step, setStep] = useState<Step>("form");
+  const [recipientMode, setRecipientMode] = useState<"select" | "manual">("manual");
   const [recipient, setRecipient] = useState("");
+  const [accountNumber, setAccountNumber] = useState("");
   const [recipientName, setRecipientName] = useState("");
   const [country, setCountry] = useState("United States");
   const countryBanks = useMemo(() => banksByCountry[country] ?? banks, [country]);
@@ -39,11 +41,20 @@ export function TransferSheet({ open, kind, onClose }: Props) {
   const [txnId, setTxnId] = useState<string | null>(null);
   const receiptRef = useRef<HTMLDivElement>(null);
 
+  // Auto-resolve recipient name from manually entered account number
+  const verifiedUser = useMemo(() => {
+    if (kind !== "local" || recipientMode !== "manual") return null;
+    const clean = accountNumber.trim();
+    if (clean.length < 4) return null;
+    return otherUsers.find(x => x.accountNumber.toLowerCase() === clean.toLowerCase()) ?? null;
+  }, [accountNumber, otherUsers, recipientMode, kind]);
+
   const reset = () => {
-    setStep("form"); setRecipient(""); setRecipientName("");
+    setStep("form"); setRecipient(""); setAccountNumber(""); setRecipientName("");
     setCountry("United States"); setBank((banksByCountry["United States"] ?? banks)[0]);
     setSwift(""); setIban(""); setCurrency("USD");
     setAmount(""); setNarration(""); setErr(null); setTxnId(null);
+    setRecipientMode("manual");
   };
   const close = () => { reset(); onClose(); };
 
@@ -55,7 +66,11 @@ export function TransferSheet({ open, kind, onClose }: Props) {
     const fee = kind === "wire" ? 2500 : 0;
     if (amt + fee > u.balance) return setErr("Insufficient balance");
     if (kind === "local") {
-      if (!recipient) return setErr("Select a recipient");
+      if (recipientMode === "select") {
+        if (!recipient) return setErr("Select a recipient");
+      } else {
+        if (!verifiedUser) return setErr("Account number not found or not yet approved");
+      }
     } else {
       if (!recipientName || !swift || !iban) return setErr("Fill all wire details");
     }
