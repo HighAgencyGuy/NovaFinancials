@@ -6,9 +6,11 @@
 // You can pass additional config via defineConfig({ vite: { ... } }) if needed.
 import { defineConfig } from "@lovable.dev/vite-tanstack-config";
 
-// Redirect TanStack Start's bundled server entry to src/server.ts (our SSR error wrapper).
-// @cloudflare/vite-plugin builds from this — wrangler.jsonc main alone is insufficient.
+// Custom SSR entry wraps TanStack Start with branded error pages.
+// Nitro preset "vercel" produces dist/ output for Vercel deployment.
 export default defineConfig({
+  // Nitro bundles the app for Vercel (Fluid Compute / serverless functions).
+  nitro: { preset: "vercel" },
   tanstackStart: {
     server: { entry: "server" },
   },
