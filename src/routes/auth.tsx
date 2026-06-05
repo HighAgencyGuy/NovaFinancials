@@ -20,9 +20,11 @@ function AuthPage() {
 
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
   const [fullName, setFullName] = useState("");
   const [accountType, setAccountType] = useState<AccountType>("Savings");
   const [pin, setPin] = useState("");
+  const [confirmPin, setConfirmPin] = useState("");
   const [err, setErr] = useState<string | null>(null);
   const [success, setSuccess] = useState(false);
 
@@ -43,7 +45,9 @@ function AuthPage() {
     if (!fullName.trim()) return setErr("Enter your full name");
     if (!/^.+@.+\..+$/.test(email)) return setErr("Enter a valid email");
     if (strength < 2) return setErr("Password too weak");
+    if (password !== confirmPassword) return setErr("Passwords do not match");
     if (!/^\d{4}$/.test(pin)) return setErr("PIN must be 4 digits");
+    if (pin !== confirmPin) return setErr("PINs do not match");
     const r = register({ fullName, email, password, accountType, pin });
     if (!r.ok) return setErr(r.error!);
     setSuccess(true);
@@ -105,6 +109,7 @@ function AuthPage() {
                       background: strength < 2 ? "var(--negative)" : strength < 3 ? "var(--gold)" : "var(--positive)",
                     }} />
                 </div>
+                <NeuInput label="Confirm Password" type="password" placeholder="••••••••" value={confirmPassword} onChange={e => setConfirmPassword(e.target.value)} />
                 <NeuSelect
                   label="Account Type"
                   value={accountType}
@@ -117,6 +122,7 @@ function AuthPage() {
                   ]}
                 />
                 <NeuInput label="4-Digit Transaction PIN" type="password" inputMode="numeric" maxLength={4} placeholder="••••" value={pin} mono onChange={e => setPin(e.target.value.replace(/\D/g, ""))} />
+                <NeuInput label="Confirm PIN" type="password" inputMode="numeric" maxLength={4} placeholder="••••" value={confirmPin} mono onChange={e => setConfirmPin(e.target.value.replace(/\D/g, ""))} />
                 <NeuButton size="lg" className="w-full mt-2 rounded-[12px]" style={{ background: "var(--text-dark)", color: "var(--bg)", letterSpacing: "0.05em" }} onClick={handleRegister}>Create Account</NeuButton>
               </motion.div>
             )}

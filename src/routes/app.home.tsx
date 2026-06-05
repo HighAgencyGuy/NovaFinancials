@@ -1,5 +1,5 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
-import { useCurrentUser, useStore } from "@/lib/store";
+import { useCurrentUser, useStore, type Transaction } from "@/lib/store";
 import { NGN, greeting, maskAccount, timeAgo } from "@/lib/format";
 import { useCountUp } from "@/hooks/useCountUp";
 import { useMemo, useState } from "react";
@@ -9,6 +9,7 @@ import { PieChart, Pie, Cell, ResponsiveContainer } from "recharts";
 import { moneyTips } from "@/constants/tips";
 import { NeuCard } from "@/components/neu/NeuCard";
 import { TransferSheet } from "@/components/sheets/TransferSheet";
+import { TransactionDetailSheet } from "@/components/sheets/TransactionDetailSheet";
 
 export const Route = createFileRoute("/app/home")({
   component: Home,
@@ -20,6 +21,7 @@ function Home() {
   const balanceAnim = useCountUp(u?.balance ?? 0);
   const [reveal, setReveal] = useState(false);
   const [sheet, setSheet] = useState<null | "local" | "wire">(null);
+  const [detailTxn, setDetailTxn] = useState<Transaction | null>(null);
   const nav = useNavigate();
 
   const firstName = u?.fullName.split(" ")[0] ?? "";
@@ -38,11 +40,11 @@ function Home() {
   return (
     <div className="flex flex-col gap-6">
       <header className="flex items-center justify-between">
-        <div>
+        <div className="min-w-0">
           <p className="text-text-muted text-xs">{greeting()},</p>
-          <h1 className="font-display font-semibold text-xl">{firstName}</h1>
+          <h1 className="font-display font-semibold text-xl truncate">{firstName}</h1>
         </div>
-        <Link to="/app/notifications" aria-label="Notifications" className="relative">
+        <Link to="/app/notifications" aria-label="Notifications" className="relative shrink-0 ml-3">
           <div className="neu-raised rounded-full w-11 h-11 grid place-items-center active:[box-shadow:var(--neu-pressed)]">
             <Bell size={18} className="text-text-mid" />
           </div>
@@ -50,52 +52,81 @@ function Home() {
         </Link>
       </header>
 
-      <NeuCard variant="float" radius="xl" className="p-6 flex flex-col gap-5">
-        <div className="flex items-start justify-between">
-          <div>
-            <p className="label-caps">Available Balance</p>
-            <p className="font-mono text-4xl font-semibold mt-2" aria-live="polite">{NGN(balanceAnim)}</p>
+      <div
+        className="rounded-[24px] p-5 sm:p-6 flex flex-col gap-5 relative overflow-hidden"
+        style={{
+          background: "linear-gradient(135deg, #2C1810 0%, #4A2A1A 55%, #2C1810 100%)",
+          boxShadow: "var(--neu-float)",
+          color: "#F0EAE0",
+        }}
+      >
+        <div className="absolute -top-16 -right-16 w-56 h-56 rounded-full opacity-20" style={{ background: "radial-gradient(circle, #C9A66B 0%, transparent 70%)" }} />
+        <div className="flex items-start justify-between gap-3 relative">
+          <div className="min-w-0 flex-1">
+            <p className="uppercase font-semibold" style={{ color: "#C0A888", fontSize: "9px", letterSpacing: "0.15em" }}>Available Balance</p>
+            <p
+              className="font-mono font-semibold mt-2 tabular-nums break-all"
+              style={{ color: "#F0EAE0", fontSize: "clamp(1.6rem, 8vw, 2.4rem)", lineHeight: 1.1 }}
+              aria-live="polite"
+            >
+              {NGN(balanceAnim)}
+            </p>
+            <p className="text-[10px] mt-1.5" style={{ color: "#A08060" }}>
+              Ledger: <span className="font-mono">{NGN(u.balance)}</span>
+            </p>
           </div>
-          <div className="neu-pressed rounded-full px-3 py-1 text-[10px] font-semibold text-accent uppercase tracking-wider">{u.accountType}</div>
+          <div
+            className="rounded-full px-3 py-1 text-[10px] font-semibold uppercase tracking-wider shrink-0"
+            style={{ background: "rgba(255,248,240,0.12)", color: "#E8D5B7", boxShadow: "inset 1px 1px 3px rgba(0,0,0,0.4), inset -1px -1px 2px rgba(255,255,255,0.05)" }}
+          >
+            {u.accountType}
+          </div>
         </div>
-        <div className="flex items-center justify-between gap-2 text-xs">
-          <span className="font-mono text-text-muted tracking-widest">{reveal ? u.accountNumber : maskAccount(u.accountNumber)}</span>
-          <div className="flex gap-2">
-            <button aria-label="Toggle reveal" onClick={() => setReveal(r => !r)} className="neu-raised rounded-full w-9 h-9 grid place-items-center active:[box-shadow:var(--neu-pressed)]">
+        <div className="flex items-center justify-between gap-2 text-xs relative">
+          <span className="font-mono tracking-widest truncate" style={{ color: "#C0A888" }}>
+            {reveal ? u.accountNumber : maskAccount(u.accountNumber)}
+          </span>
+          <div className="flex gap-2 shrink-0">
+            <button aria-label="Toggle reveal" onClick={() => setReveal(r => !r)}
+              className="rounded-full w-9 h-9 grid place-items-center"
+              style={{ background: "rgba(255,248,240,0.08)", color: "#E8D5B7", boxShadow: "inset 1px 1px 3px rgba(0,0,0,0.5), 1px 1px 2px rgba(255,255,255,0.04)" }}>
               {reveal ? <EyeOff size={14} /> : <Eye size={14} />}
             </button>
-            <button aria-label="Copy" onClick={() => navigator.clipboard?.writeText(u.accountNumber)} className="neu-raised rounded-full w-9 h-9 grid place-items-center active:[box-shadow:var(--neu-pressed)]">
+            <button aria-label="Copy" onClick={() => navigator.clipboard?.writeText(u.accountNumber)}
+              className="rounded-full w-9 h-9 grid place-items-center"
+              style={{ background: "rgba(255,248,240,0.08)", color: "#E8D5B7", boxShadow: "inset 1px 1px 3px rgba(0,0,0,0.5), 1px 1px 2px rgba(255,255,255,0.04)" }}>
               <Copy size={14} />
             </button>
           </div>
         </div>
-        <div className="grid grid-cols-4 gap-3 pt-2">
+        <div className="grid grid-cols-4 gap-2 sm:gap-3 pt-2 relative">
           {[
             { icon: ArrowUpRight, label: "Send", on: () => setSheet("local") },
             { icon: Globe, label: "Wire", on: () => setSheet("wire") },
-            { icon: Banknote, label: "Deposit", on: () => nav({ to: "/app/deposit" }) },
+            { icon: Banknote, label: "Save", on: () => nav({ to: "/app/deposit" }) },
             { icon: TrendingUp, label: "Invest", on: () => nav({ to: "/app/investments" }) },
           ].map((a, i) => (
             <motion.button key={a.label}
               initial={{opacity:0,y:8}} animate={{opacity:1,y:0}} transition={{delay:0.05*i}}
-              whileTap={{ scale: 0.97 }} onClick={a.on}
-              className="neu-raised rounded-[14px] py-3 flex flex-col items-center gap-1.5 active:[box-shadow:var(--neu-pressed)]">
-              <a.icon size={18} className="text-accent" />
+              whileTap={{ scale: 0.96 }} onClick={a.on}
+              className="rounded-[14px] py-3 flex flex-col items-center gap-1.5"
+              style={{ background: "rgba(255,248,240,0.08)", color: "#E8D5B7", boxShadow: "inset 1px 1px 3px rgba(0,0,0,0.45), 2px 2px 5px rgba(0,0,0,0.3)" }}>
+              <a.icon size={18} />
               <span className="text-[10px] font-semibold">{a.label}</span>
             </motion.button>
           ))}
         </div>
-      </NeuCard>
+      </div>
 
       <section>
         <p className="label-caps mb-3">Services</p>
-        <div className="grid grid-cols-4 gap-3">
+        <div className="grid grid-cols-4 gap-2 sm:gap-3">
           {[
             { icon: Globe, label: "Wire", to: undefined as string | undefined, on: () => setSheet("wire") },
             { icon: ArrowUpRight, label: "Local", to: undefined, on: () => setSheet("local") },
-            { icon: Banknote, label: "Deposit", to: "/app/deposit" },
-            { icon: FileText, label: "Savings", to: "/app/statements" },
-            { icon: Wallet, label: "Checking", to: "/app/statements" },
+            { icon: Banknote, label: "Savings", to: "/app/deposit" },
+            { icon: FileText, label: "Statement", to: "/app/statements" },
+            { icon: Wallet, label: "History", to: "/app/transactions" },
             { icon: CreditCard, label: "Card", to: "/app/card" },
             { icon: PiggyBank, label: "Loans", to: "/app/loans" },
             { icon: Briefcase, label: "Invest", to: "/app/investments" },
@@ -104,11 +135,11 @@ function Home() {
               <motion.div
                 initial={{opacity:0,y:8}} animate={{opacity:1,y:0}} transition={{delay:0.04*i}}
                 whileTap={{ scale: 0.97 }}
-                className="neu-raised rounded-[18px] py-4 flex flex-col items-center gap-2 active:[box-shadow:var(--neu-pressed)] cursor-pointer">
-                <div className="neu-pressed rounded-full w-10 h-10 grid place-items-center">
-                  <s.icon size={16} className="text-accent" />
+                className="neu-raised rounded-[18px] py-3 sm:py-4 flex flex-col items-center gap-1.5 sm:gap-2 active:[box-shadow:var(--neu-pressed)] cursor-pointer">
+                <div className="neu-pressed rounded-full w-9 h-9 sm:w-10 sm:h-10 grid place-items-center">
+                  <s.icon size={14} className="text-accent" />
                 </div>
-                <span className="text-[10px] text-text-muted font-semibold">{s.label}</span>
+                <span className="text-[9px] sm:text-[10px] text-text-muted font-semibold text-center leading-tight">{s.label}</span>
               </motion.div>
             );
             return s.to ? <Link key={s.label} to={s.to as never}>{Inner}</Link> : <button key={s.label} onClick={s.on} className="text-left">{Inner}</button>;
@@ -167,28 +198,30 @@ function Home() {
             </NeuCard>
           )}
           {u.transactions.slice(0, 5).map((t, i) => (
-            <motion.div key={t.id} initial={{opacity:0,y:8}} animate={{opacity:1,y:0}} transition={{delay:i*0.05}}>
-              <NeuCard className="p-4 flex items-center gap-3">
-                <div className="neu-pressed rounded-full w-11 h-11 grid place-items-center text-base">
+            <motion.button key={t.id} initial={{opacity:0,y:8}} animate={{opacity:1,y:0}} transition={{delay:i*0.05}}
+              onClick={() => setDetailTxn(t)} className="text-left w-full">
+              <NeuCard className="p-4 flex items-center gap-3 active:[box-shadow:var(--neu-pressed)]">
+                <div className="neu-pressed rounded-full w-11 h-11 grid place-items-center text-base shrink-0">
                   {t.category === "transfer" ? "↗" : t.category === "wire" ? "🌐" : t.category === "deposit" ? "↘" : t.category === "investment" ? "📈" : t.category === "loan" ? "🏦" : "•"}
                 </div>
                 <div className="flex-1 min-w-0">
                   <p className="text-sm font-semibold truncate">{t.description}</p>
-                  <p className="text-[10px] text-text-muted">{timeAgo(t.timestamp)}</p>
+                  <p className="text-[10px] text-text-muted truncate">{timeAgo(t.timestamp)}</p>
                 </div>
-                <div className="text-right">
+                <div className="text-right shrink-0">
                   <p className={`font-mono text-sm font-semibold ${t.type === "credit" ? "text-positive" : "text-negative"}`}>
                     {t.type === "credit" ? "+" : "-"}{NGN(t.amount)}
                   </p>
                   <p className="text-[9px] text-text-muted uppercase">{t.status}</p>
                 </div>
               </NeuCard>
-            </motion.div>
+            </motion.button>
           ))}
         </div>
       </section>
 
       <TransferSheet open={sheet !== null} kind={sheet ?? "local"} onClose={() => setSheet(null)} />
+      <TransactionDetailSheet txn={detailTxn} onClose={() => setDetailTxn(null)} />
     </div>
   );
 }

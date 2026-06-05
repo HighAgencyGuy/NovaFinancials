@@ -70,6 +70,7 @@ interface AppState extends AuthState {
   markNotifRead: (userId: string, id: string) => void;
   deleteNotif: (userId: string, id: string) => void;
   markAllRead: (userId: string) => void;
+  changePin: (userId: string, oldPin: string, newPin: string) => { ok: boolean; error?: string };
 }
 
 export interface Notif {
@@ -79,6 +80,7 @@ export interface Notif {
   kind: "success" | "info" | "warning" | "error";
   createdAt: string;
   read: boolean;
+  txnId?: string;
 }
 
 const seedAdmin = (): User => ({
@@ -256,6 +258,14 @@ export const useStore = create<AppState>()(
             [userId]: (s.notifications[userId] ?? []).map(n => ({ ...n, read: true })),
           },
         })),
+      changePin: (userId, oldPin, newPin) => {
+        const u = get().users.find(x => x.id === userId);
+        if (!u) return { ok: false, error: "No user" };
+        if (u.pinHash !== hash(oldPin)) return { ok: false, error: "Current PIN incorrect" };
+        if (!/^\d{4}$/.test(newPin)) return { ok: false, error: "PIN must be 4 digits" };
+        get().updateUser(userId, { pinHash: hash(newPin) });
+        return { ok: true };
+      },
     }),
     {
       name: "nova-bank-store",
