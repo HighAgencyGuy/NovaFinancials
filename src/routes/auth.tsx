@@ -109,6 +109,7 @@ function AuthPage() {
                       background: strength < 2 ? "var(--negative)" : strength < 3 ? "var(--gold)" : "var(--positive)",
                     }} />
                 </div>
+                <NeuInput label="Confirm Password" type="password" placeholder="••••••••" value={confirmPassword} onChange={e => setConfirmPassword(e.target.value)} />
                 <NeuSelect
                   label="Account Type"
                   value={accountType}
@@ -121,6 +122,7 @@ function AuthPage() {
                   ]}
                 />
                 <NeuInput label="4-Digit Transaction PIN" type="password" inputMode="numeric" maxLength={4} placeholder="••••" value={pin} mono onChange={e => setPin(e.target.value.replace(/\D/g, ""))} />
+                <NeuInput label="Confirm PIN" type="password" inputMode="numeric" maxLength={4} placeholder="••••" value={confirmPin} mono onChange={e => setConfirmPin(e.target.value.replace(/\D/g, ""))} />
                 <NeuButton size="lg" className="w-full mt-2 rounded-[12px]" style={{ background: "var(--text-dark)", color: "var(--bg)", letterSpacing: "0.05em" }} onClick={handleRegister}>Create Account</NeuButton>
               </motion.div>
             )}
