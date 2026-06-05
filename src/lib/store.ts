@@ -70,6 +70,7 @@ interface AppState extends AuthState {
   markNotifRead: (userId: string, id: string) => void;
   deleteNotif: (userId: string, id: string) => void;
   markAllRead: (userId: string) => void;
+  changePin: (userId: string, oldPin: string, newPin: string) => { ok: boolean; error?: string };
 }
 
 export interface Notif {
@@ -79,6 +80,7 @@ export interface Notif {
   kind: "success" | "info" | "warning" | "error";
   createdAt: string;
   read: boolean;
+  txnId?: string;
 }
 
 const seedAdmin = (): User => ({
