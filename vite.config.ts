@@ -9,8 +9,15 @@ import { defineConfig } from "@lovable.dev/vite-tanstack-config";
 // Custom SSR entry wraps TanStack Start with branded error pages.
 // Nitro preset "vercel" produces dist/ output for Vercel deployment.
 export default defineConfig({
-  // Nitro bundles the app for Vercel (Fluid Compute / serverless functions).
-  nitro: { preset: "vercel" },
+  // Nitro preset "vercel" emits Build Output API artifacts under .output/
+  nitro: {
+    preset: "vercel",
+    output: {
+      dir: ".output",
+      serverDir: ".output/server",
+      publicDir: ".output/public",
+    },
+  },
   tanstackStart: {
     server: { entry: "server" },
   },

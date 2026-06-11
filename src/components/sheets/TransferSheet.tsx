@@ -1,4 +1,6 @@
-import { useState, useRef, useMemo } from "react";
+import { useState, useRef, useMemo, useEffect } from "react";
+import { fetchApprovedUsers, findUserByAccountNumber, transferFunds } from "@/lib/supabase-api";
+import type { User } from "@/lib/store";
 import { motion, AnimatePresence } from "framer-motion";
 import { BottomSheet } from "../BottomSheet";
 import { NeuInput, NeuSelect, NeuTextarea } from "../neu/NeuInput";
@@ -18,16 +20,54 @@ export function TransferSheet({ open, kind, onClose }: Props) {
   const u = useCurrentUser();
   const addTxn = useStore(s => s.addTransaction);
   const pushNotif = useStore(s => s.pushNotif);
-  const allUsers = useStore(s => s.users);
-  const otherUsers = useMemo(
-    () => allUsers.filter(x => x.role === "user" && x.id !== u?.id && x.status === "approved"),
-    [allUsers, u?.id]
-  );
-
+  const refreshCurrentUser = useStore(s => s.refreshCurrentUser);
   const [step, setStep] = useState<Step>("form");
   const [recipientMode, setRecipientMode] = useState<"select" | "manual">("manual");
   const [recipient, setRecipient] = useState("");
   const [accountNumber, setAccountNumber] = useState("");
+  const [otherUsers, setOtherUsers] = useState<User[]>([]);
+  const [verifiedUser, setVerifiedUser] = useState<User | null>(null);
+
+  useEffect(() => {
+    if (!open || kind !== "local") return;
+    void fetchApprovedUsers(u?.id).then(setOtherUsers);
+  }, [open, kind, u?.id]);
+
+  useEffect(() => {
+    if (kind !== "local" || recipientMode !== "manual") {
+      setVerifiedUser(null);
+      return;
+    }
+    const clean = accountNumber.trim();
+    if (clean.length < 4) {
+      setVerifiedUser(null);
+      return;
+    }
+    void findUserByAccountNumber(clean).then(profile => {
+      if (!profile) { setVerifiedUser(null); return; }
+      setVerifiedUser({
+        id: profile.id,
+        fullName: profile.full_name,
+        email: profile.email,
+        passwordHash: "",
+        role: profile.role,
+        accountNumber: profile.account_number,
+        accountType: profile.account_type,
+        balance: profile.balance / 100,
+        ledgerBalance: 0,
+        savingsBalance: 0,
+        savingsTxns: [],
+        status: profile.status,
+        pinHash: profile.pin_hash ?? "",
+        transactions: [],
+        virtualCards: [],
+        pendingRequests: [],
+        createdAt: profile.created_at,
+        lastLogin: profile.last_login ?? profile.created_at,
+      });
+    });
+  }, [accountNumber, recipientMode, kind]);
+
   const [recipientName, setRecipientName] = useState("");
   const [country, setCountry] = useState("United States");
   const countryBanks = useMemo(() => banksByCountry[country] ?? banks, [country]);
@@ -40,14 +80,6 @@ export function TransferSheet({ open, kind, onClose }: Props) {
   const [err, setErr] = useState<string | null>(null);
   const [txnId, setTxnId] = useState<string | null>(null);
   const receiptRef = useRef<HTMLDivElement>(null);
-
-  // Auto-resolve recipient name from manually entered account number
-  const verifiedUser = useMemo(() => {
-    if (kind !== "local" || recipientMode !== "manual") return null;
-    const clean = accountNumber.trim();
-    if (clean.length < 4) return null;
-    return otherUsers.find(x => x.accountNumber.toLowerCase() === clean.toLowerCase()) ?? null;
-  }, [accountNumber, otherUsers, recipientMode, kind]);
 
   const reset = () => {
     setStep("form"); setRecipient(""); setAccountNumber(""); setRecipientName("");
@@ -77,7 +109,7 @@ export function TransferSheet({ open, kind, onClose }: Props) {
     setStep("pin");
   };
 
-  const finalize = () => {
+  const finalize = async () => {
     if (!u) return;
     const amt = Number(amount);
     const fee = kind === "wire" ? 2500 : 0;
@@ -87,6 +119,35 @@ export function TransferSheet({ open, kind, onClose }: Props) {
     const counterparty = kind === "local"
       ? (localRecipient?.fullName ?? "Recipient")
       : `${recipientName} (${bank})`;
+
+    if (kind === "local" && localRecipient) {
+      const result = await transferFunds({
+        senderId: u.id,
+        recipientId: localRecipient.id,
+        amount: amt,
+        description: narration || "Local transfer",
+      });
+      if (!result.ok) {
+        setErr(result.error);
+        setStep("form");
+        return;
+      }
+      await refreshCurrentUser();
+      pushNotif(localRecipient.id, {
+        title: "Money received",
+        body: `${u.fullName} sent you ${NGN(amt)}`,
+        kind: "success",
+      });
+      pushNotif(u.id, {
+        title: "Transfer sent",
+        body: `${NGN(amt)} to ${counterparty}`,
+        kind: "success",
+      });
+      setTxnId(u.transactions[0]?.id ?? null);
+      setStep("success");
+      return;
+    }
+
     const txn = addTxn(u.id, {
       type: "debit",
       category: kind === "local" ? "transfer" : "wire",
@@ -97,10 +158,6 @@ export function TransferSheet({ open, kind, onClose }: Props) {
     });
     if (fee > 0) {
       addTxn(u.id, { type: "debit", category: "fee", amount: fee, description: "Wire transfer fee", counterparty: "NOVA Bank", status: "completed" });
-    }
-    if (kind === "local" && txn && localRecipient) {
-      const rtxn = addTxn(localRecipient.id, { type: "credit", category: "transfer", amount: amt, description: narration || "Transfer received", counterparty: u.fullName, status: "completed" });
-      pushNotif(localRecipient.id, { title: "Money received", body: `${u.fullName} sent you ${NGN(amt)}`, kind: "success", txnId: rtxn?.id });
     }
     pushNotif(u.id, { title: kind === "wire" ? "Wire submitted" : "Transfer sent", body: `${NGN(amt)} to ${counterparty}`, kind: "success", txnId: txn?.id });
     setTxnId(txn?.id ?? null);

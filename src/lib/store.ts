@@ -1,19 +1,33 @@
 import { create } from "zustand";
 import { persist } from "zustand/middleware";
-import { hash, newAccountNumber, newTxnRef, randomDigits, randomId } from "./format";
-
+import { hash, newTxnRef, randomDigits, randomId } from "./format";
+import { changePinFn, signInFn, signUpFn, verifyPinFn } from "./auth.server";
+import {
+  adminDebitAccount,
+  adminFundAccount,
+  approveAccount,
+  deleteNotification,
+  fetchNotifications,
+  fetchProfileById,
+  fetchTransactions,
+  hydrateUser,
+  insertNotification,
+  markAllNotificationsRead,
+  markNotificationRead,
+  updateAccountStatus,
+} from "./supabase-api";
 export type Role = "user" | "admin";
 export type AccountType = "Savings" | "Checking" | "Premium" | "Business";
 export type AccountStatus = "pending" | "approved" | "suspended" | "rejected";
 export type TxnType = "credit" | "debit";
 export type TxnCategory =
-  | "transfer" | "wire" | "deposit" | "fee" | "investment" | "loan" | "admin" | "savings" | "card";
+  | "transfer" | "wire" | "deposit" | "fee" | "investment" | "loan" | "admin";
 export type TxnStatus = "completed" | "pending" | "failed";
 
 export interface Transaction {
   id: string;
   type: TxnType;
-  category: TxnCategory;
+  category: TxnCategory | "savings" | "card";
   amount: number;
   balanceBefore: number;
   balanceAfter: number;
@@ -36,7 +50,7 @@ export interface SavingsTxn {
 export type CardTier = "Standard" | "Ruby" | "Platinum";
 export const CARD_TIERS: Record<CardTier, { fee: number; limit: number }> = {
   Standard: { fee: 155, limit: 5_000 },
-  Ruby:     { fee: 275, limit: 25_000 },
+  Ruby: { fee: 275, limit: 25_000 },
   Platinum: { fee: 400, limit: 100_000 },
 };
 
@@ -59,17 +73,28 @@ export interface PendingRequest {
   id: string;
   kind: PendingKind;
   status: PendingStatus;
-  amount: number;        // for ledger_release: incoming amount; for virtual_card: 0
-  fee: number;           // fee to be paid
-  tier?: CardTier;       // virtual_card
+  amount: number;
+  fee: number;
+  tier?: CardTier;
   note?: string;
   createdAt: string;
 }
 
 export interface PayoutDetails {
-  directDeposit?: string;   // bank account info text
-  cryptoWallet?: string;    // wallet address text
+  directDeposit?: string;
+  cryptoWallet?: string;
   cryptoNetwork?: string;
+}
+
+export interface LocalUserExtras {
+  ledgerBalance: number;
+  savingsBalance: number;
+  savingsTxns: SavingsTxn[];
+  virtualCards: VirtualCard[];
+  pendingRequests: PendingRequest[];
+  payoutDetails?: PayoutDetails;
+  savingsAccruedAt?: string;
+  cardFrozen?: boolean;
 }
 
 export interface User {
@@ -98,57 +123,55 @@ export interface User {
 
 interface AuthState {
   currentUserId: string | null;
+  currentUser: User | null;
   pinFailures: number;
   pinLockUntil: number | null;
 }
 
 interface AppState extends AuthState {
-  users: User[];
+  extrasByUserId: Record<string, LocalUserExtras>;
   notifications: Record<string, Notif[]>;
   globalPayoutDetails: PayoutDetails;
+
+  setCurrentUser: (user: User | null) => void;
+  clearSession: () => void;
+  refreshCurrentUser: () => Promise<void>;
 
   register: (input: {
     fullName: string; email: string; password: string;
     accountType: AccountType; pin: string;
-  }) => { ok: boolean; error?: string };
-  login: (email: string, password: string) => { ok: boolean; error?: string };
+  }) => Promise<{ ok: boolean; error?: string }>;
+  login: (email: string, password: string) => Promise<{ ok: boolean; error?: string }>;
   logout: () => void;
-  verifyPin: (pin: string) => { ok: boolean; error?: string };
+  verifyPin: (pin: string) => Promise<{ ok: boolean; error?: string }>;
   updateUser: (id: string, patch: Partial<User>) => void;
   addTransaction: (userId: string, t: Omit<Transaction, "id" | "reference" | "timestamp" | "balanceBefore" | "balanceAfter">) => Transaction | null;
   editTransaction: (userId: string, txnId: string, patch: Partial<Transaction>) => void;
   deleteTransaction: (userId: string, txnId: string) => void;
-  approveUser: (id: string) => void;
-  rejectUser: (id: string) => void;
-  suspendUser: (id: string) => void;
-  reinstateUser: (id: string) => void;
-  fundAccount: (id: string, amount: number) => void;
-  debitAccount: (id: string, amount: number, description: string) => void;
+  approveUser: (id: string) => Promise<{ ok: boolean; error?: string }>;
+  rejectUser: (id: string) => Promise<{ ok: boolean; error?: string }>;
+  suspendUser: (id: string) => Promise<{ ok: boolean; error?: string }>;
+  reinstateUser: (id: string) => Promise<{ ok: boolean; error?: string }>;
+  fundAccount: (id: string, amount: number) => Promise<{ ok: boolean; error?: string }>;
+  debitAccount: (id: string, amount: number, description: string) => Promise<{ ok: boolean; error?: string }>;
 
-    // Ledger / fee flow
-    fundLedger: (id: string, amount: number, note?: string) => void;
-    markFeePaid: (userId: string, reqId: string) => void;
-    approveRequest: (userId: string, reqId: string) => void;
-    rejectRequest: (userId: string, reqId: string) => void;
-
-    // Virtual cards
-    requestVirtualCard: (userId: string, tier: CardTier) => void;
-    freezeVirtualCard: (userId: string, cardId: string, frozen: boolean) => void;
-
-    // Payout details
-    setUserPayoutDetails: (userId: string, details: PayoutDetails) => void;
-    setGlobalPayoutDetails: (details: PayoutDetails) => void;
-
-    // Savings
-    depositToSavings: (userId: string, amount: number) => { ok: boolean; error?: string };
-    withdrawFromSavings: (userId: string, amount: number) => { ok: boolean; error?: string };
-    accrueSavingsInterest: (userId: string) => void;
-
+  fundLedger: (id: string, amount: number, note?: string) => void;
+  markFeePaid: (userId: string, reqId: string) => void;
+  approveRequest: (userId: string, reqId: string) => void;
+  rejectRequest: (userId: string, reqId: string) => void;
+  requestVirtualCard: (userId: string, tier: CardTier) => void;
+  freezeVirtualCard: (userId: string, cardId: string, frozen: boolean) => void;
+  setUserPayoutDetails: (userId: string, details: PayoutDetails) => void;
+  setGlobalPayoutDetails: (details: PayoutDetails) => void;
+  depositToSavings: (userId: string, amount: number) => { ok: boolean; error?: string };
+  withdrawFromSavings: (userId: string, amount: number) => { ok: boolean; error?: string };
+  accrueSavingsInterest: (userId: string) => void;
   pushNotif: (userId: string, n: Omit<Notif, "id" | "createdAt" | "read">) => void;
   markNotifRead: (userId: string, id: string) => void;
   deleteNotif: (userId: string, id: string) => void;
   markAllRead: (userId: string) => void;
-  changePin: (userId: string, oldPin: string, newPin: string) => { ok: boolean; error?: string };
+  changePin: (userId: string, oldPin: string, newPin: string) => Promise<{ ok: boolean; error?: string }>;
+  syncNotifications: (userId: string) => Promise<void>;
 }
 
 export interface Notif {
@@ -164,41 +187,24 @@ export interface Notif {
 
 export const SAVINGS_APY = 0.04;
 
-const ensureUserShape = (u: Partial<User>): User => ({
-  id: u.id ?? randomId(),
-  fullName: u.fullName ?? "",
-  email: u.email ?? "",
-  passwordHash: u.passwordHash ?? "",
-  role: u.role ?? "user",
-  accountNumber: u.accountNumber ?? newAccountNumber(),
-  accountType: u.accountType ?? "Savings",
-  balance: u.balance ?? 0,
-  ledgerBalance: u.ledgerBalance ?? 0,
-  savingsBalance: u.savingsBalance ?? 0,
-  savingsTxns: u.savingsTxns ?? [],
-  status: u.status ?? "pending",
-  pinHash: u.pinHash ?? hash("0000"),
-  transactions: u.transactions ?? [],
-  virtualCards: u.virtualCards ?? [],
-  pendingRequests: u.pendingRequests ?? [],
-  payoutDetails: u.payoutDetails,
-  savingsAccruedAt: u.savingsAccruedAt,
-  createdAt: u.createdAt ?? new Date().toISOString(),
-  lastLogin: u.lastLogin ?? new Date().toISOString(),
-  cardFrozen: u.cardFrozen,
+const defaultExtras = (): LocalUserExtras => ({
+  ledgerBalance: 0,
+  savingsBalance: 0,
+  savingsTxns: [],
+  virtualCards: [],
+  pendingRequests: [],
 });
 
-const seedAdmin = (): User => ensureUserShape({
-  id: "admin-root",
-  fullName: "Master Control",
-  email: "admin@novabank.com",
-  passwordHash: hash("Admin@2025"),
-  role: "admin",
-  accountNumber: "NOVA-0000000001",
-  accountType: "Premium",
-  balance: 0,
-  status: "approved",
-  pinHash: hash("0000"),
+const getExtras = (state: AppState, userId: string): LocalUserExtras =>
+  state.extrasByUserId[userId] ?? defaultExtras();
+
+const patchExtras = (
+  state: AppState,
+  userId: string,
+  patch: Partial<LocalUserExtras>,
+): Record<string, LocalUserExtras> => ({
+  ...state.extrasByUserId,
+  [userId]: { ...getExtras(state, userId), ...patch },
 });
 
 const generateCard = (tier: CardTier): VirtualCard => {
@@ -220,54 +226,73 @@ const generateCard = (tier: CardTier): VirtualCard => {
 export const useStore = create<AppState>()(
   persist(
     (set, get) => ({
-      users: [seedAdmin()],
+      currentUser: null,
+      currentUserId: null,
+      extrasByUserId: {},
       notifications: {},
-            globalPayoutDetails: {
+      globalPayoutDetails: {
         directDeposit: "NOVA Holdings • Routing 026073150 • Acct 8821-559014",
         cryptoWallet: "bc1qx2v8nova7demo9wallet0addrxxxxxxxxxxxx",
         cryptoNetwork: "Bitcoin (BTC)",
       },
-      currentUserId: null,
       pinFailures: 0,
       pinLockUntil: null,
 
-      register: ({ fullName, email, password, accountType, pin }) => {
-        const exists = get().users.some(u => u.email.toLowerCase() === email.toLowerCase());
-        if (exists) return { ok: false, error: "Email already registered" };
-        const user = ensureUserShape({
-          fullName, email,
-          passwordHash: hash(password),
-          role: "user",
-          accountType,
-          pinHash: hash(pin),
-          status: "pending",
-        });
-        set(s => ({ users: [...s.users, user] }));
+      setCurrentUser: user =>
+        set({ currentUser: user, currentUserId: user?.id ?? null }),
+
+      clearSession: () =>
+        set({ currentUser: null, currentUserId: null, pinFailures: 0, pinLockUntil: null }),
+
+      refreshCurrentUser: async () => {
+        const id = get().currentUserId;
+        if (!id) return;
+        const profile = await fetchProfileById(id);
+        if (!profile) return;
+        const user = await hydrateUser(profile, getExtras(get(), id));
+        const notifs = await fetchNotifications(id);
+        set(s => ({
+          currentUser: user,
+          notifications: { ...s.notifications, [id]: notifs },
+        }));
+      },
+
+      register: async ({ fullName, email, password, accountType, pin }) => {
+        return signUpFn({ data: { fullName, email, password, accountType, pin } });
+      },
+
+      login: async (email, password) => {
+        const result = await signInFn({ data: { email, password } });
+        if (!result.ok) return result;
+
+        const extras = getExtras(get(), result.profile.id);
+        const user = await hydrateUser(result.profile, extras);
+        const notifs = await fetchNotifications(result.profile.id);
+        get().accrueSavingsInterest(user.id);
+
+        set(s => ({
+          currentUserId: result.profile.id,
+          currentUser: user,
+          pinFailures: 0,
+          pinLockUntil: null,
+          notifications: { ...s.notifications, [result.profile.id]: notifs },
+        }));
+
         return { ok: true };
       },
 
-      login: (email, password) => {
-        const u = get().users.find(u => u.email.toLowerCase() === email.toLowerCase());
-        if (!u) return { ok: false, error: "Account not found" };
-        if (u.passwordHash !== hash(password)) return { ok: false, error: "Incorrect password" };
-        if (u.status === "rejected") return { ok: false, error: "Application rejected" };
-        set({ currentUserId: u.id, pinFailures: 0, pinLockUntil: null });
-        get().updateUser(u.id, { lastLogin: new Date().toISOString() });
-        get().accrueSavingsInterest(u.id);
-        return { ok: true };
-      },
+      logout: () => get().clearSession(),
 
-      logout: () => set({ currentUserId: null, pinFailures: 0, pinLockUntil: null }),
-
-      verifyPin: (pin) => {
-        const { currentUserId, users, pinFailures, pinLockUntil } = get();
+      verifyPin: async pin => {
+        const { currentUserId, pinFailures, pinLockUntil } = get();
         if (pinLockUntil && Date.now() < pinLockUntil) {
           const s = Math.ceil((pinLockUntil - Date.now()) / 1000);
           return { ok: false, error: `Locked. Try again in ${s}s` };
         }
-        const u = users.find(x => x.id === currentUserId);
-        if (!u) return { ok: false, error: "No session" };
-        if (u.pinHash !== hash(pin)) {
+        if (!currentUserId) return { ok: false, error: "No session" };
+
+        const result = await verifyPinFn({ data: { userId: currentUserId, pin } });
+        if (!result.ok) {
           const nf = pinFailures + 1;
           if (nf >= 3) {
             set({ pinFailures: 0, pinLockUntil: Date.now() + 30_000 });
@@ -280,11 +305,42 @@ export const useStore = create<AppState>()(
         return { ok: true };
       },
 
-      updateUser: (id, patch) =>
-        set(s => ({ users: s.users.map(u => u.id === id ? { ...u, ...patch } : u) })),
+      updateUser: (id, patch) => {
+        const localKeys: (keyof LocalUserExtras)[] = [
+          "ledgerBalance", "savingsBalance", "savingsTxns", "virtualCards",
+          "pendingRequests", "payoutDetails", "savingsAccruedAt", "cardFrozen",
+        ];
+        const extrasPatch: Partial<LocalUserExtras> = {};
+        const userPatch: Partial<User> = {};
+
+        for (const [k, v] of Object.entries(patch)) {
+          if (localKeys.includes(k as keyof LocalUserExtras)) {
+            (extrasPatch as Record<string, unknown>)[k] = v;
+          } else {
+            (userPatch as Record<string, unknown>)[k] = v;
+          }
+        }
+
+        set(s => {
+          const next: Partial<AppState> = {};
+          if (Object.keys(extrasPatch).length) {
+            next.extrasByUserId = patchExtras(s, id, extrasPatch);
+          }
+          if (s.currentUser?.id === id && Object.keys(userPatch).length) {
+            next.currentUser = { ...s.currentUser, ...userPatch };
+          }
+          if (s.currentUser?.id === id && Object.keys(extrasPatch).length) {
+            next.currentUser = {
+              ...(next.currentUser as User ?? s.currentUser),
+              ...extrasPatch,
+            };
+          }
+          return next;
+        });
+      },
 
       addTransaction: (userId, t) => {
-        const u = get().users.find(x => x.id === userId);
+        const u = get().currentUser?.id === userId ? get().currentUser : null;
         if (!u) return null;
         const balanceBefore = u.balance;
         const delta = t.type === "credit" ? t.amount : -t.amount;
@@ -306,68 +362,52 @@ export const useStore = create<AppState>()(
       },
 
       editTransaction: (userId, txnId, patch) => {
-        const u = get().users.find(x => x.id === userId);
-        if (!u) return;
-        const txns = u.transactions.map(t => t.id === txnId ? { ...t, ...patch } : t);
-        get().updateUser(userId, { transactions: txns });
+        const u = get().currentUser;
+        if (!u || u.id !== userId) return;
+        get().updateUser(userId, {
+          transactions: u.transactions.map(t => (t.id === txnId ? { ...t, ...patch } : t)),
+        });
       },
 
       deleteTransaction: (userId, txnId) => {
-        const u = get().users.find(x => x.id === userId);
-        if (!u) return;
-        get().updateUser(userId, { transactions: u.transactions.filter(t => t.id !== txnId) });
+        const u = get().currentUser;
+        if (!u || u.id !== userId) return;
+        get().updateUser(userId, {
+          transactions: u.transactions.filter(t => t.id !== txnId),
+        });
       },
 
-      approveUser: (id) => {
-        const u = get().users.find(x => x.id === id);
-        if (!u) return;
-        get().updateUser(id, { status: "approved" });
-        get().addTransaction(id, {
-          type: "credit", category: "admin", amount: 50000,
-          description: "Account opening credit", counterparty: "NOVA Bank",
-          status: "completed",
-        });
-        get().pushNotif(id, {
-          title: "Account approved",
-          body: "Welcome to NOVA. $50,000 opening credit applied.",
-          kind: "success",
-        });
+      approveUser: async id => {
+        const r = await approveAccount(id);
+        if (get().currentUserId === id) await get().refreshCurrentUser();
+        return r;
       },
-      rejectUser: (id) => get().updateUser(id, { status: "rejected" }),
-      suspendUser: (id) => get().updateUser(id, { status: "suspended" }),
-      reinstateUser: (id) => get().updateUser(id, { status: "approved" }),
+      rejectUser: async id => updateAccountStatus(id, "rejected"),
+      suspendUser: async id => updateAccountStatus(id, "suspended"),
+      reinstateUser: async id => updateAccountStatus(id, "approved"),
 
-      fundAccount: (id, amount) => {
-        get().addTransaction(id, {
-          type: "credit", category: "admin", amount,
-          description: "Admin credit", counterparty: "NOVA Admin",
-          status: "completed",
-        });
-        get().pushNotif(id, {
-          title: "Account funded",
-          body: `Your account was credited.`,
-          kind: "success",
-        });
+      fundAccount: async (id, amount) => {
+        const r = await adminFundAccount(id, amount);
+        if (r.ok && get().currentUserId === id) await get().refreshCurrentUser();
+        return r;
       },
-      debitAccount: (id, amount, description) => {
-        get().addTransaction(id, {
-          type: "debit", category: "admin", amount,
-          description, counterparty: "NOVA Admin",
-          status: "completed",
-        });
+
+      debitAccount: async (id, amount, description) => {
+        const r = await adminDebitAccount(id, amount, description);
+        if (r.ok && get().currentUserId === id) await get().refreshCurrentUser();
+        return r;
       },
 
       fundLedger: (id, amount, note) => {
-        const u = get().users.find(x => x.id === id);
-        if (!u) return;
+        const extras = getExtras(get(), id);
         const fee = Math.round(amount * 0.1 * 100) / 100;
         const req: PendingRequest = {
           id: randomId(), kind: "ledger_release", status: "awaiting_fee",
           amount, fee, note, createdAt: new Date().toISOString(),
         };
         get().updateUser(id, {
-          ledgerBalance: u.ledgerBalance + amount,
-          pendingRequests: [req, ...u.pendingRequests],
+          ledgerBalance: extras.ledgerBalance + amount,
+          pendingRequests: [req, ...extras.pendingRequests],
         });
         get().pushNotif(id, {
           title: "Incoming funds in ledger",
@@ -378,10 +418,10 @@ export const useStore = create<AppState>()(
       },
 
       markFeePaid: (userId, reqId) => {
-        const u = get().users.find(x => x.id === userId);
-        if (!u) return;
+        const extras = getExtras(get(), userId);
         get().updateUser(userId, {
-          pendingRequests: u.pendingRequests.map(r => r.id === reqId ? { ...r, status: "fee_paid" as PendingStatus } : r),
+          pendingRequests: extras.pendingRequests.map(r =>
+            r.id === reqId ? { ...r, status: "fee_paid" as PendingStatus } : r),
         });
         get().pushNotif(userId, {
           title: "Fee payment submitted",
@@ -392,15 +432,12 @@ export const useStore = create<AppState>()(
       },
 
       approveRequest: (userId, reqId) => {
-        const u = get().users.find(x => x.id === userId);
-        if (!u) return;
-        const req = u.pendingRequests.find(r => r.id === reqId);
+        const extras = getExtras(get(), userId);
+        const req = extras.pendingRequests.find(r => r.id === reqId);
         if (!req) return;
 
         if (req.kind === "ledger_release") {
-          // Move from ledger to main balance
-          const newLedger = Math.max(0, u.ledgerBalance - req.amount);
-          get().updateUser(userId, { ledgerBalance: newLedger });
+          get().updateUser(userId, { ledgerBalance: Math.max(0, extras.ledgerBalance - req.amount) });
           get().addTransaction(userId, {
             type: "credit", category: "deposit", amount: req.amount,
             description: req.note || "Incoming transfer released", counterparty: "NOVA Clearing",
@@ -413,7 +450,8 @@ export const useStore = create<AppState>()(
           });
         } else if (req.kind === "virtual_card" && req.tier) {
           const card = generateCard(req.tier);
-          get().updateUser(userId, { virtualCards: [card, ...u.virtualCards] });
+          const fresh = getExtras(get(), userId);
+          get().updateUser(userId, { virtualCards: [card, ...fresh.virtualCards] });
           get().pushNotif(userId, {
             title: `${req.tier} card issued`,
             body: `Your new virtual card ending ${card.number.slice(-4)} is ready.`,
@@ -421,26 +459,23 @@ export const useStore = create<AppState>()(
           });
         }
 
-        // mark approved
-        const fresh = get().users.find(x => x.id === userId);
-        if (fresh) {
-          get().updateUser(userId, {
-            pendingRequests: fresh.pendingRequests.map(r => r.id === reqId ? { ...r, status: "approved" as PendingStatus } : r),
-          });
-        }
+        const freshExtras = getExtras(get(), userId);
+        get().updateUser(userId, {
+          pendingRequests: freshExtras.pendingRequests.map(r =>
+            r.id === reqId ? { ...r, status: "approved" as PendingStatus } : r),
+        });
       },
 
       rejectRequest: (userId, reqId) => {
-        const u = get().users.find(x => x.id === userId);
-        if (!u) return;
-        const req = u.pendingRequests.find(r => r.id === reqId);
+        const extras = getExtras(get(), userId);
+        const req = extras.pendingRequests.find(r => r.id === reqId);
         if (!req) return;
-        // For ledger_release, refund the ledger balance entry (remove pending amount)
-        const patch: Partial<User> = {
-          pendingRequests: u.pendingRequests.map(r => r.id === reqId ? { ...r, status: "rejected" as PendingStatus } : r),
+        const patch: Partial<LocalUserExtras> = {
+          pendingRequests: extras.pendingRequests.map(r =>
+            r.id === reqId ? { ...r, status: "rejected" as PendingStatus } : r),
         };
         if (req.kind === "ledger_release") {
-          patch.ledgerBalance = Math.max(0, u.ledgerBalance - req.amount);
+          patch.ledgerBalance = Math.max(0, extras.ledgerBalance - req.amount);
         }
         get().updateUser(userId, patch);
         get().pushNotif(userId, {
@@ -452,14 +487,13 @@ export const useStore = create<AppState>()(
       },
 
       requestVirtualCard: (userId, tier) => {
-        const u = get().users.find(x => x.id === userId);
-        if (!u) return;
+        const extras = getExtras(get(), userId);
         const fee = CARD_TIERS[tier].fee;
         const req: PendingRequest = {
           id: randomId(), kind: "virtual_card", tier, status: "awaiting_fee",
           amount: 0, fee, createdAt: new Date().toISOString(),
         };
-        get().updateUser(userId, { pendingRequests: [req, ...u.pendingRequests] });
+        get().updateUser(userId, { pendingRequests: [req, ...extras.pendingRequests] });
         get().pushNotif(userId, {
           title: `${tier} card requested`,
           body: `Pay $${fee} processing fee to issue your card.`,
@@ -469,36 +503,36 @@ export const useStore = create<AppState>()(
       },
 
       freezeVirtualCard: (userId, cardId, frozen) => {
-        const u = get().users.find(x => x.id === userId);
-        if (!u) return;
+        const extras = getExtras(get(), userId);
         get().updateUser(userId, {
-          virtualCards: u.virtualCards.map(c => c.id === cardId ? { ...c, frozen } : c),
+          virtualCards: extras.virtualCards.map(c => (c.id === cardId ? { ...c, frozen } : c)),
         });
       },
 
       setUserPayoutDetails: (userId, details) => {
         get().updateUser(userId, { payoutDetails: details });
       },
-      setGlobalPayoutDetails: (details) => set({ globalPayoutDetails: details }),
+
+      setGlobalPayoutDetails: details => set({ globalPayoutDetails: details }),
 
       depositToSavings: (userId, amount) => {
-        const u = get().users.find(x => x.id === userId);
-        if (!u) return { ok: false, error: "No user" };
+        const u = get().currentUser;
+        if (!u || u.id !== userId) return { ok: false, error: "No user" };
         if (amount <= 0) return { ok: false, error: "Invalid amount" };
         if (u.balance < amount) return { ok: false, error: "Insufficient main balance" };
         get().accrueSavingsInterest(userId);
-        const fresh = get().users.find(x => x.id === userId)!;
-        const newSavings = fresh.savingsBalance + amount;
-        const newMain = fresh.balance - amount;
+        const fresh = get().currentUser!;
+        const extras = getExtras(get(), userId);
+        const newSavings = extras.savingsBalance + amount;
         const stxn: SavingsTxn = {
           id: randomId(), type: "credit", amount,
           description: "Deposit from main", timestamp: new Date().toISOString(),
           balanceAfter: newSavings,
         };
         get().updateUser(userId, {
-          balance: newMain,
+          balance: fresh.balance - amount,
           savingsBalance: newSavings,
-          savingsTxns: [stxn, ...fresh.savingsTxns],
+          savingsTxns: [stxn, ...extras.savingsTxns],
           savingsAccruedAt: new Date().toISOString(),
         });
         get().addTransaction(userId, {
@@ -510,13 +544,13 @@ export const useStore = create<AppState>()(
       },
 
       withdrawFromSavings: (userId, amount) => {
-        const u = get().users.find(x => x.id === userId);
-        if (!u) return { ok: false, error: "No user" };
+        const u = get().currentUser;
+        if (!u || u.id !== userId) return { ok: false, error: "No user" };
         if (amount <= 0) return { ok: false, error: "Invalid amount" };
         get().accrueSavingsInterest(userId);
-        const fresh = get().users.find(x => x.id === userId)!;
-        if (fresh.savingsBalance < amount) return { ok: false, error: "Insufficient savings" };
-        const newSavings = fresh.savingsBalance - amount;
+        const extras = getExtras(get(), userId);
+        if (extras.savingsBalance < amount) return { ok: false, error: "Insufficient savings" };
+        const newSavings = extras.savingsBalance - amount;
         const stxn: SavingsTxn = {
           id: randomId(), type: "debit", amount,
           description: "Withdrawal to main", timestamp: new Date().toISOString(),
@@ -524,7 +558,7 @@ export const useStore = create<AppState>()(
         };
         get().updateUser(userId, {
           savingsBalance: newSavings,
-          savingsTxns: [stxn, ...fresh.savingsTxns],
+          savingsTxns: [stxn, ...extras.savingsTxns],
           savingsAccruedAt: new Date().toISOString(),
         });
         get().addTransaction(userId, {
@@ -535,22 +569,25 @@ export const useStore = create<AppState>()(
         return { ok: true };
       },
 
-      accrueSavingsInterest: (userId) => {
-        const u = get().users.find(x => x.id === userId);
-        if (!u) return;
-        if (u.savingsBalance <= 0) {
-          if (!u.savingsAccruedAt) get().updateUser(userId, { savingsAccruedAt: new Date().toISOString() });
+      accrueSavingsInterest: userId => {
+        const u = get().currentUser;
+        if (!u || u.id !== userId) return;
+        const extras = getExtras(get(), userId);
+        if (extras.savingsBalance <= 0) {
+          if (!extras.savingsAccruedAt) {
+            get().updateUser(userId, { savingsAccruedAt: new Date().toISOString() });
+          }
           return;
         }
-        const last = u.savingsAccruedAt ? new Date(u.savingsAccruedAt).getTime() : Date.now();
+        const last = extras.savingsAccruedAt ? new Date(extras.savingsAccruedAt).getTime() : Date.now();
         const days = (Date.now() - last) / (1000 * 60 * 60 * 24);
         if (days < 0.001) return;
-        const interest = u.savingsBalance * SAVINGS_APY * (days / 365);
+        const interest = extras.savingsBalance * SAVINGS_APY * (days / 365);
         if (interest < 0.01) {
           get().updateUser(userId, { savingsAccruedAt: new Date().toISOString() });
           return;
         }
-        const newSavings = u.savingsBalance + interest;
+        const newSavings = extras.savingsBalance + interest;
         const stxn: SavingsTxn = {
           id: randomId(), type: "credit", amount: interest,
           description: `Interest @ ${(SAVINGS_APY * 100).toFixed(2)}% APY`,
@@ -559,12 +596,23 @@ export const useStore = create<AppState>()(
         };
         get().updateUser(userId, {
           savingsBalance: newSavings,
-          savingsTxns: [stxn, ...u.savingsTxns],
+          savingsTxns: [stxn, ...extras.savingsTxns],
           savingsAccruedAt: new Date().toISOString(),
         });
       },
 
-      pushNotif: (userId, n) =>
+      syncNotifications: async userId => {
+        const notifs = await fetchNotifications(userId);
+        set(s => ({ notifications: { ...s.notifications, [userId]: notifs } }));
+      },
+
+      pushNotif: (userId, n) => {
+        const kindToType = { success: "credit", error: "debit", info: "info", warning: "warning" } as const;
+        void insertNotification(userId, {
+          title: n.title,
+          message: n.body,
+          type: kindToType[n.kind],
+        });
         set(s => ({
           notifications: {
             ...s.notifications,
@@ -573,65 +621,64 @@ export const useStore = create<AppState>()(
               ...(s.notifications[userId] ?? []),
             ],
           },
-        })),
-      markNotifRead: (userId, id) =>
+        }));
+      },
+
+      markNotifRead: (userId, id) => {
+        void markNotificationRead(userId, id);
         set(s => ({
           notifications: {
             ...s.notifications,
-            [userId]: (s.notifications[userId] ?? []).map(n => n.id === id ? { ...n, read: true } : n),
+            [userId]: (s.notifications[userId] ?? []).map(n => (n.id === id ? { ...n, read: true } : n)),
           },
-        })),
-      deleteNotif: (userId, id) =>
+        }));
+      },
+
+      deleteNotif: (userId, id) => {
+        void deleteNotification(userId, id);
         set(s => ({
           notifications: {
             ...s.notifications,
             [userId]: (s.notifications[userId] ?? []).filter(n => n.id !== id),
           },
-        })),
-      markAllRead: (userId) =>
+        }));
+      },
+
+      markAllRead: userId => {
+        void markAllNotificationsRead(userId);
         set(s => ({
           notifications: {
             ...s.notifications,
             [userId]: (s.notifications[userId] ?? []).map(n => ({ ...n, read: true })),
           },
-        })),
-      changePin: (userId, oldPin, newPin) => {
-        const u = get().users.find(x => x.id === userId);
-        if (!u) return { ok: false, error: "No user" };
-        if (u.pinHash !== hash(oldPin)) return { ok: false, error: "Current PIN incorrect" };
-        if (!/^\d{4}$/.test(newPin)) return { ok: false, error: "PIN must be 4 digits" };
-        get().updateUser(userId, { pinHash: hash(newPin) });
-        return { ok: true };
+        }));
+      },
+
+      changePin: async (userId, oldPin, newPin) => {
+        const u = get().currentUser;
+        if (!u || u.id !== userId) return { ok: false, error: "No user" };
+        const result = await changePinFn({ data: { userId, oldPin, newPin } });
+        if (result.ok) {
+          get().updateUser(userId, { pinHash: "updated" });
+        }
+        return result;
       },
     }),
     {
       name: "nova-bank-store",
-      partialize: (s) => ({
-        users: s.users,
-        notifications: s.notifications,
+      partialize: s => ({
         currentUserId: s.currentUserId,
+        currentUser: s.currentUser,
+        extrasByUserId: s.extrasByUserId,
+        notifications: s.notifications,
         globalPayoutDetails: s.globalPayoutDetails,
       }),
-      merge: (persisted, current) => {
-        const p = (persisted ?? {}) as Partial<AppState>;
-        const usersRaw = Array.isArray(p.users) ? p.users : [];
-        const users = usersRaw.map(u => ensureUserShape(u));
-        const hasAdmin = users.some(u => u.role === "admin" && u.email.toLowerCase() === "admin@novabank.com");
-        return {
-          ...current,
-          ...p,
-          users: hasAdmin
-            ? users.map(u => u.email.toLowerCase() === "admin@novabank.com"
-                ? { ...u, passwordHash: hash("Admin@2025"), status: "approved", role: "admin" }
-                : u)
-            : [seedAdmin(), ...users],
-        };
-      },
-    }
-  )
+      merge: (persisted, current) => ({
+        ...current,
+        ...(persisted ?? {}),
+      }),
+    },
+  ),
 );
 
-export const useCurrentUser = () => {
-  const id = useStore(s => s.currentUserId);
-  return useStore(s => s.users.find(u => u.id === id) ?? null);
-};
+export const useCurrentUser = () => useStore(s => s.currentUser);

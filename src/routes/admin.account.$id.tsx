@@ -1,6 +1,7 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { useStore } from "@/lib/store";
-import { useMemo, useState } from "react";
+import { useStore, type User } from "@/lib/store";
+import { useEffect, useMemo, useState } from "react";
+import { fetchProfileById, hydrateUser } from "@/lib/supabase-api";
 import { NeuCard } from "@/components/neu/NeuCard";
 import { NeuButton } from "@/components/neu/NeuButton";
 import { NeuInput, NeuTextarea } from "@/components/neu/NeuInput";
@@ -16,7 +17,8 @@ export const Route = createFileRoute("/admin/account/$id")({
 
 function AcctDetail() {
   const { id } = Route.useParams();
-  const u = useStore(s => s.users.find(x => x.id === id));
+  const extrasByUserId = useStore(s => s.extrasByUserId);
+  const [u, setU] = useState<User | null>(null);
   const fund = useStore(s => s.fundAccount);
   const debit = useStore(s => s.debitAccount);
   const fundLedger = useStore(s => s.fundLedger);
@@ -32,9 +34,21 @@ function AcctDetail() {
   const [editTxn, setEditTxn] = useState<Transaction | null>(null);
   const PER = 10;
 
-  const [pDirect, setPDirect] = useState(u?.payoutDetails?.directDeposit ?? "");
-  const [pWallet, setPWallet] = useState(u?.payoutDetails?.cryptoWallet ?? "");
-  const [pNetwork, setPNetwork] = useState(u?.payoutDetails?.cryptoNetwork ?? "");
+  const [pDirect, setPDirect] = useState("");
+  const [pWallet, setPWallet] = useState("");
+  const [pNetwork, setPNetwork] = useState("");
+
+  const reload = async () => {
+    const profile = await fetchProfileById(id);
+    if (!profile) { setU(null); return; }
+    const user = await hydrateUser(profile, extrasByUserId[id]);
+    setU(user);
+    setPDirect(user.payoutDetails?.directDeposit ?? "");
+    setPWallet(user.payoutDetails?.cryptoWallet ?? "");
+    setPNetwork(user.payoutDetails?.cryptoNetwork ?? "");
+  };
+
+  useEffect(() => { void reload(); }, [id, extrasByUserId]);
 
   const series = useMemo(() => {
     if (!u) return [];
@@ -106,8 +120,8 @@ function AcctDetail() {
       <NeuCard className="p-5 grid grid-cols-1 md:grid-cols-4 gap-3 items-end">
         <NeuInput label="Amount" prefix="$" mono value={amt} onChange={e => setAmt(e.target.value.replace(/[^\d.]/g,""))} />
         <NeuInput label="Description" value={desc} onChange={e => setDesc(e.target.value)} />
-        <NeuButton tone="positive" disabled={!Number(amt)} onClick={() => { fund(u.id, Number(amt)); setAmt(""); }}>Credit Main</NeuButton>
-        <NeuButton tone="negative" disabled={!Number(amt) || Number(amt) > u.balance} onClick={() => { debit(u.id, Number(amt), desc); setAmt(""); }}>Debit Main</NeuButton>
+        <NeuButton tone="positive" disabled={!Number(amt)} onClick={() => { void fund(u.id, Number(amt)).then(() => reload()); setAmt(""); }}>Credit Main</NeuButton>
+        <NeuButton tone="negative" disabled={!Number(amt) || Number(amt) > u.balance} onClick={() => { void debit(u.id, Number(amt), desc).then(() => reload()); setAmt(""); }}>Debit Main</NeuButton>
         <div className="md:col-span-4 flex gap-3">
           <NeuButton size="sm" onClick={() => update(u.id, { pinHash: "00000" })}>Reset PIN to 0000</NeuButton>
           </div>

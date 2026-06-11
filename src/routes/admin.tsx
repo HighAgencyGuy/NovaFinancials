@@ -10,8 +10,7 @@ export const Route = createFileRoute("/admin")({
     if (!raw) throw redirect({ to: "/auth" });
     try {
       const s = JSON.parse(raw);
-      const id = s.state?.currentUserId;
-      const u = (s.state?.users ?? []).find((x: { id: string }) => x.id === id);
+      const u = s.state?.currentUser;
       if (!u || u.role !== "admin") throw redirect({ to: "/auth" });
     } catch { throw redirect({ to: "/auth" }); }
   },

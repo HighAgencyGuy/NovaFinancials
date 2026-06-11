@@ -1,19 +1,19 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { useMemo, useState } from "react";
-import { useStore } from "@/lib/store";
+import { useCallback, useEffect, useMemo, useState } from "react";
+import { useStore, type User } from "@/lib/store";
 import { NeuCard } from "@/components/neu/NeuCard";
 import { NeuButton } from "@/components/neu/NeuButton";
 import { NeuInput, NeuTextarea } from "@/components/neu/NeuInput";
 import { NGN, timeAgo } from "@/lib/format";
 import { useCountUp } from "@/hooks/useCountUp";
+import { fetchAdminStats, fetchAllUserProfiles } from "@/lib/supabase-api";
 
 export const Route = createFileRoute("/admin/")({
   component: AdminHome,
 });
 
 function AdminHome() {
-  const allUsers = useStore(s => s.users);
-  const users = useMemo(() => allUsers.filter(u => u.role === "user"), [allUsers]);
+  const extrasByUserId = useStore(s => s.extrasByUserId);
   const approveUser = useStore(s => s.approveUser);
   const reject = useStore(s => s.rejectUser);
   const suspend = useStore(s => s.suspendUser);
@@ -25,10 +25,24 @@ function AdminHome() {
   const globalPayout = useStore(s => s.globalPayoutDetails);
   const setGlobalPayout = useStore(s => s.setGlobalPayoutDetails);
 
+  const [users, setUsers] = useState<User[]>([]);
+  const [stats, setStats] = useState({ totalAccounts: 0, pendingCount: 0, systemBalance: 0 });
+
+  const loadData = useCallback(async () => {
+    const [profiles, adminStats] = await Promise.all([
+      fetchAllUserProfiles(),
+      fetchAdminStats(),
+    ]);
+    setUsers(profiles.map(u => ({ ...u, ...extrasByUserId[u.id], ledgerBalance: extrasByUserId[u.id]?.ledgerBalance ?? 0, savingsBalance: extrasByUserId[u.id]?.savingsBalance ?? 0, pendingRequests: extrasByUserId[u.id]?.pendingRequests ?? [], virtualCards: extrasByUserId[u.id]?.virtualCards ?? [], savingsTxns: extrasByUserId[u.id]?.savingsTxns ?? [] })));
+    setStats(adminStats);
+  }, [extrasByUserId]);
+
+  useEffect(() => { void loadData(); }, [loadData]);
+
   const pending = useMemo(() => users.filter(u => u.status === "pending"), [users]);
-  const total = users.length;
-  const sysBalance = useMemo(() => users.reduce((s, u) => s + u.balance, 0), [users]);
-  const a1 = useCountUp(total, 700), a2 = useCountUp(pending.length, 700), a3 = useCountUp(sysBalance, 900);
+  const a1 = useCountUp(stats.totalAccounts, 700);
+  const a2 = useCountUp(stats.pendingCount, 700);
+  const a3 = useCountUp(stats.systemBalance, 900);
 
   const [search, setSearch] = useState("");
   const [sort, setSort] = useState<{ k: "fullName" | "balance" | "createdAt"; dir: 1 | -1 }>({ k: "createdAt", dir: -1 });
@@ -89,8 +103,8 @@ function AdminHome() {
                 </div>
               </div>
               <div className="flex gap-2 shrink-0">
-                <NeuButton size="sm" tone="positive" onClick={() => approveUser(p.id)}>Approve</NeuButton>
-                <NeuButton size="sm" tone="negative" onClick={() => reject(p.id)}>Reject</NeuButton>
+                <NeuButton size="sm" tone="positive" onClick={() => void approveUser(p.id).then(() => loadData())}>Approve</NeuButton>
+                <NeuButton size="sm" tone="negative" onClick={() => void reject(p.id).then(() => loadData())}>Reject</NeuButton>
               </div>
             </NeuCard>
           ))}
@@ -142,9 +156,12 @@ function AdminHome() {
             </select>
           </div>
           <NeuButton tone="accent" disabled={!fundId || !Number(fundAmt)} onClick={() => {
-            if (fundTarget === "main") fund(fundId, Number(fundAmt));
-            else fundLedger(fundId, Number(fundAmt), "Incoming transfer");
-            setFundAmt("");
+            void (async () => {
+              if (fundTarget === "main") await fund(fundId, Number(fundAmt));
+              else fundLedger(fundId, Number(fundAmt), "Incoming transfer");
+              setFundAmt("");
+              await loadData();
+            })();
           }}>Send</NeuButton>
         </div>
       </NeuCard>
@@ -194,9 +211,9 @@ function AdminHome() {
               <div className="flex flex-wrap gap-2">
                 <Link to="/admin/account/$id" params={{ id: u.id }}><NeuButton size="sm">View</NeuButton></Link>
                 {u.status === "approved"
-                  ? <NeuButton size="sm" tone="negative" onClick={() => suspend(u.id)}>Suspend</NeuButton>
+                  ? <NeuButton size="sm" tone="negative" onClick={() => void suspend(u.id).then(() => loadData())}>Suspend</NeuButton>
                   : u.status === "suspended"
-                    ? <NeuButton size="sm" tone="positive" onClick={() => reinstate(u.id)}>Reinstate</NeuButton>
+                    ? <NeuButton size="sm" tone="positive" onClick={() => void reinstate(u.id).then(() => loadData())}>Reinstate</NeuButton>
                     : null}
               </div>
             </NeuCard>

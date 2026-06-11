@@ -22,7 +22,7 @@ export const Route = createFileRoute("/app")({
 });
 
 function AppLayout() {
-  const u = useStore(s => s.users.find(x => x.id === s.currentUserId));
+  const u = useStore(s => s.currentUser);
   const logout = useStore(s => s.logout);
   const nav = useNavigate();
   const { warn, expired, dismiss } = useIdle(15 * 60_000, 60_000);

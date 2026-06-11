@@ -25,8 +25,8 @@ export function PinPad({ onSuccess, onCancel, title = "Enter Transaction PIN" }:
   const lockSec = locked ? Math.ceil((lockUntil! - now) / 1000) : 0;
 
   useEffect(() => {
-    if (pin.length === 4) {
-      const r = verify(pin);
+    if (pin.length !== 4) return;
+    void verify(pin).then(r => {
       if (r.ok) {
         navigator.vibrate?.([80, 40, 80]);
         onSuccess();
@@ -36,8 +36,8 @@ export function PinPad({ onSuccess, onCancel, title = "Enter Transaction PIN" }:
         setShake(s => s + 1);
         setTimeout(() => setPin(""), 250);
       }
-    }
-  }, [pin]);
+    });
+  }, [pin, verify, onSuccess]);
 
   const press = (n: string) => {
     if (locked) return;

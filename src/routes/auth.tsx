@@ -16,8 +16,6 @@ function AuthPage() {
   const navigate = useNavigate();
   const login = useStore(s => s.login);
   const register = useStore(s => s.register);
-  const users = useStore(s => s.users);
-
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
@@ -30,17 +28,17 @@ function AuthPage() {
 
   const strength = pwStrength(password);
 
-  const handleSignIn = () => {
+  const handleSignIn = async () => {
     setErr(null);
-    const r = login(email, password);
+    const r = await login(email, password);
     if (!r.ok) return setErr(r.error!);
-    const u = users.find(x => x.email.toLowerCase() === email.toLowerCase());
+    const u = useStore.getState().currentUser;
     if (u?.role === "admin") navigate({ to: "/admin" });
     else if (u?.status === "suspended" || u?.status === "pending") navigate({ to: "/locked" });
     else navigate({ to: "/app/home" });
   };
 
-  const handleRegister = () => {
+  const handleRegister = async () => {
     setErr(null);
     if (!fullName.trim()) return setErr("Enter your full name");
     if (!/^.+@.+\..+$/.test(email)) return setErr("Enter a valid email");
@@ -48,14 +46,10 @@ function AuthPage() {
     if (password !== confirmPassword) return setErr("Passwords do not match");
     if (!/^\d{4}$/.test(pin)) return setErr("PIN must be 4 digits");
     if (pin !== confirmPin) return setErr("PINs do not match");
-    const r = register({ fullName, email, password, accountType, pin });
+    const r = await register({ fullName, email, password, accountType, pin });
     if (!r.ok) return setErr(r.error!);
     setSuccess(true);
     setTimeout(() => { setSuccess(false); setTab("signin"); }, 1600);
-  };
-
-  const fillAdmin = () => {
-    setTab("signin"); setEmail("admin@novabank.com"); setPassword("Admin@2025");
   };
 
   return (
@@ -144,9 +138,6 @@ function AuthPage() {
           </AnimatePresence>
         </div>
 
-        <button onClick={fillAdmin} className="text-[10px] underline" style={{ color: "var(--text-placeholder)" }}>
-          Admin portal access
-        </button>
       </div>
     </main>
   );

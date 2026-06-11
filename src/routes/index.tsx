@@ -9,8 +9,7 @@ export const Route = createFileRoute("/")({
 
 function Splash() {
   const navigate = useNavigate();
-  const currentUserId = useStore(s => s.currentUserId);
-  const users = useStore(s => s.users);
+  const currentUser = useStore(s => s.currentUser);
   const [pct, setPct] = useState(0);
 
   useEffect(() => {
@@ -21,7 +20,7 @@ function Splash() {
       setPct(t * 100);
       if (t < 1) raf = requestAnimationFrame(tick);
       else {
-        const u = users.find(x => x.id === currentUserId);
+        const u = currentUser;
         if (!u) navigate({ to: "/auth" });
         else if (u.status === "suspended" || u.status === "pending") navigate({ to: "/locked" });
         else if (u.role === "admin") navigate({ to: "/admin" });

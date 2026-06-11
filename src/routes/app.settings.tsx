@@ -26,10 +26,10 @@ function Settings() {
 
   if (!u) return null;
 
-  const submitPin = () => {
+  const submitPin = async () => {
     setPinMsg(null);
     if (newPin !== confirmPin) return setPinMsg({ ok: false, text: "PINs do not match" });
-    const r = changePin(u.id, oldPin, newPin);
+    const r = await changePin(u.id, oldPin, newPin);
     if (!r.ok) return setPinMsg({ ok: false, text: r.error ?? "Failed" });
     setPinMsg({ ok: true, text: "PIN updated" });
     setOldPin(""); setNewPin(""); setConfirmPin("");

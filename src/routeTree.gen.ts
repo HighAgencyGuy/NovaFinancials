@@ -19,6 +19,7 @@ import { Route as AppTransactionsRouteImport } from './routes/app.transactions'
 import { Route as AppSupportRouteImport } from './routes/app.support'
 import { Route as AppStatementsRouteImport } from './routes/app.statements'
 import { Route as AppSettingsRouteImport } from './routes/app.settings'
+import { Route as AppSavingsRouteImport } from './routes/app.savings'
 import { Route as AppNotificationsRouteImport } from './routes/app.notifications'
 import { Route as AppLoansRouteImport } from './routes/app.loans'
 import { Route as AppInvestmentsRouteImport } from './routes/app.investments'
@@ -77,6 +78,11 @@ const AppSettingsRoute = AppSettingsRouteImport.update({
   path: '/settings',
   getParentRoute: () => AppRoute,
 } as any)
+const AppSavingsRoute = AppSavingsRouteImport.update({
+  id: '/savings',
+  path: '/savings',
+  getParentRoute: () => AppRoute,
+} as any)
 const AppNotificationsRoute = AppNotificationsRouteImport.update({
   id: '/notifications',
   path: '/notifications',
@@ -125,6 +131,7 @@ export interface FileRoutesByFullPath {
   '/app/investments': typeof AppInvestmentsRoute
   '/app/loans': typeof AppLoansRoute
   '/app/notifications': typeof AppNotificationsRoute
+  '/app/savings': typeof AppSavingsRoute
   '/app/settings': typeof AppSettingsRoute
   '/app/statements': typeof AppStatementsRoute
   '/app/support': typeof AppSupportRoute
@@ -143,6 +150,7 @@ export interface FileRoutesByTo {
   '/app/investments': typeof AppInvestmentsRoute
   '/app/loans': typeof AppLoansRoute
   '/app/notifications': typeof AppNotificationsRoute
+  '/app/savings': typeof AppSavingsRoute
   '/app/settings': typeof AppSettingsRoute
   '/app/statements': typeof AppStatementsRoute
   '/app/support': typeof AppSupportRoute
@@ -163,6 +171,7 @@ export interface FileRoutesById {
   '/app/investments': typeof AppInvestmentsRoute
   '/app/loans': typeof AppLoansRoute
   '/app/notifications': typeof AppNotificationsRoute
+  '/app/savings': typeof AppSavingsRoute
   '/app/settings': typeof AppSettingsRoute
   '/app/statements': typeof AppStatementsRoute
   '/app/support': typeof AppSupportRoute
@@ -184,6 +193,7 @@ export interface FileRouteTypes {
     | '/app/investments'
     | '/app/loans'
     | '/app/notifications'
+    | '/app/savings'
     | '/app/settings'
     | '/app/statements'
     | '/app/support'
@@ -202,6 +212,7 @@ export interface FileRouteTypes {
     | '/app/investments'
     | '/app/loans'
     | '/app/notifications'
+    | '/app/savings'
     | '/app/settings'
     | '/app/statements'
     | '/app/support'
@@ -221,6 +232,7 @@ export interface FileRouteTypes {
     | '/app/investments'
     | '/app/loans'
     | '/app/notifications'
+    | '/app/savings'
     | '/app/settings'
     | '/app/statements'
     | '/app/support'
@@ -309,6 +321,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AppSettingsRouteImport
       parentRoute: typeof AppRoute
     }
+    '/app/savings': {
+      id: '/app/savings'
+      path: '/savings'
+      fullPath: '/app/savings'
+      preLoaderRoute: typeof AppSavingsRouteImport
+      parentRoute: typeof AppRoute
+    }
     '/app/notifications': {
       id: '/app/notifications'
       path: '/notifications'
@@ -380,6 +399,7 @@ interface AppRouteChildren {
   AppInvestmentsRoute: typeof AppInvestmentsRoute
   AppLoansRoute: typeof AppLoansRoute
   AppNotificationsRoute: typeof AppNotificationsRoute
+  AppSavingsRoute: typeof AppSavingsRoute
   AppSettingsRoute: typeof AppSettingsRoute
   AppStatementsRoute: typeof AppStatementsRoute
   AppSupportRoute: typeof AppSupportRoute
@@ -393,6 +413,7 @@ const AppRouteChildren: AppRouteChildren = {
   AppInvestmentsRoute: AppInvestmentsRoute,
   AppLoansRoute: AppLoansRoute,
   AppNotificationsRoute: AppNotificationsRoute,
+  AppSavingsRoute: AppSavingsRoute,
   AppSettingsRoute: AppSettingsRoute,
   AppStatementsRoute: AppStatementsRoute,
   AppSupportRoute: AppSupportRoute,
