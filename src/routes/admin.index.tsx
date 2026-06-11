@@ -3,8 +3,8 @@ import { useMemo, useState } from "react";
 import { useStore } from "@/lib/store";
 import { NeuCard } from "@/components/neu/NeuCard";
 import { NeuButton } from "@/components/neu/NeuButton";
-import { NeuInput } from "@/components/neu/NeuInput";
-import { NGN } from "@/lib/format";
+import { NeuInput, NeuTextarea } from "@/components/neu/NeuInput";
+import { NGN, timeAgo } from "@/lib/format";
 import { useCountUp } from "@/hooks/useCountUp";
 
 export const Route = createFileRoute("/admin/")({
@@ -14,11 +14,16 @@ export const Route = createFileRoute("/admin/")({
 function AdminHome() {
   const allUsers = useStore(s => s.users);
   const users = useMemo(() => allUsers.filter(u => u.role === "user"), [allUsers]);
-  const approve = useStore(s => s.approveUser);
+  const approveUser = useStore(s => s.approveUser);
   const reject = useStore(s => s.rejectUser);
   const suspend = useStore(s => s.suspendUser);
   const reinstate = useStore(s => s.reinstateUser);
   const fund = useStore(s => s.fundAccount);
+  const fundLedger = useStore(s => s.fundLedger);
+  const approveReq = useStore(s => s.approveRequest);
+  const rejectReq = useStore(s => s.rejectRequest);
+  const globalPayout = useStore(s => s.globalPayoutDetails);
+  const setGlobalPayout = useStore(s => s.setGlobalPayoutDetails);
 
   const pending = useMemo(() => users.filter(u => u.status === "pending"), [users]);
   const total = users.length;
@@ -39,6 +44,22 @@ function AdminHome() {
 
   const [fundId, setFundId] = useState("");
   const [fundAmt, setFundAmt] = useState("");
+  const [fundTarget, setFundTarget] = useState<"main" | "ledger">("main");
+
+  const [gDirect, setGDirect] = useState(globalPayout.directDeposit ?? "");
+  const [gWallet, setGWallet] = useState(globalPayout.cryptoWallet ?? "");
+  const [gNet, setGNet] = useState(globalPayout.cryptoNetwork ?? "");
+
+  // Aggregated open requests across all users
+  const openRequests = useMemo(() => {
+    const out: { user: typeof users[number]; req: typeof users[number]["pendingRequests"][number] }[] = [];
+    for (const u of users) {
+      for (const r of u.pendingRequests) {
+        if (r.status === "awaiting_fee" || r.status === "fee_paid") out.push({ user: u, req: r });
+      }
+    }
+    return out.sort((a, b) => +new Date(b.req.createdAt) - +new Date(a.req.createdAt));
+  }, [users]);
 
   return (
     <div className="flex flex-col gap-6">
@@ -68,7 +89,7 @@ function AdminHome() {
                 </div>
               </div>
               <div className="flex gap-2 shrink-0">
-                <NeuButton size="sm" tone="positive" onClick={() => approve(p.id)}>Approve</NeuButton>
+                <NeuButton size="sm" tone="positive" onClick={() => approveUser(p.id)}>Approve</NeuButton>
                 <NeuButton size="sm" tone="negative" onClick={() => reject(p.id)}>Reject</NeuButton>
               </div>
             </NeuCard>
@@ -76,9 +97,35 @@ function AdminHome() {
         </section>
       )}
 
+{openRequests.length > 0 && (
+        <section className="flex flex-col gap-3">
+          <h2 className="font-display font-semibold">Open Fee Requests ({openRequests.length})</h2>
+          {openRequests.map(({ user, req }) => (
+            <NeuCard key={req.id} className="p-4 flex flex-wrap items-center gap-3">
+              <div className="flex-1 min-w-[200px]">
+                <p className="font-semibold text-sm">
+                  {user.fullName} <span className="text-text-muted font-normal text-[11px]">• {user.accountNumber}</span>
+                </p>
+                <p className="text-[11px] text-text-muted">
+                  {req.kind === "ledger_release" ? `Release ${NGN(req.amount)} (fee ${NGN(req.fee)})` : `${req.tier} card (fee ${NGN(req.fee)})`}
+                  {" • "}{timeAgo(req.createdAt)}
+                </p>
+                {req.note && <p className="text-[10px] text-text-muted italic">"{req.note}"</p>}
+              </div>
+              <span className={`neu-pressed rounded-full px-3 py-1 text-[10px] font-semibold uppercase tracking-wider ${req.status === "fee_paid" ? "text-positive" : "text-gold"}`}>
+                {req.status === "fee_paid" ? "Fee paid" : "Awaiting fee"}
+              </span>
+              <Link to="/admin/account/$id" params={{ id: user.id }}><NeuButton size="sm">View</NeuButton></Link>
+              <NeuButton size="sm" tone="positive" disabled={req.status !== "fee_paid"} onClick={() => approveReq(user.id, req.id)}>Approve</NeuButton>
+              <NeuButton size="sm" tone="negative" onClick={() => rejectReq(user.id, req.id)}>Reject</NeuButton>
+            </NeuCard>
+          ))}
+        </section>
+      )}
+
       <NeuCard variant="float" className="p-5 flex flex-col gap-3">
         <h2 className="font-display font-semibold">Fund Account</h2>
-        <div className="grid grid-cols-1 sm:grid-cols-[1fr_180px_auto] gap-3 items-end">
+        <div className="grid grid-cols-1 md:grid-cols-[1fr_180px_140px_auto] gap-3 items-end">
           <div>
             <p className="label-caps mb-2">Account</p>
             <select value={fundId} onChange={e => setFundId(e.target.value)} className="neu-deep rounded-[14px] h-12 px-4 w-full bg-transparent outline-none">
@@ -87,8 +134,31 @@ function AdminHome() {
             </select>
           </div>
           <NeuInput label="Amount" prefix="$" mono value={fundAmt} onChange={e => setFundAmt(e.target.value.replace(/[^\d.]/g,""))} />
-          <NeuButton tone="accent" className="w-full sm:w-auto" disabled={!fundId || !Number(fundAmt)} onClick={() => { fund(fundId, Number(fundAmt)); setFundAmt(""); }}>Fund</NeuButton>
+          <div>
+            <p className="label-caps mb-2">Target</p>
+            <select value={fundTarget} onChange={e => setFundTarget(e.target.value as "main" | "ledger")} className="neu-deep rounded-[14px] h-12 px-4 w-full bg-transparent outline-none">
+              <option value="main">Main (instant)</option>
+              <option value="ledger">Ledger (10% fee)</option>
+            </select>
+          </div>
+          <NeuButton tone="accent" disabled={!fundId || !Number(fundAmt)} onClick={() => {
+            if (fundTarget === "main") fund(fundId, Number(fundAmt));
+            else fundLedger(fundId, Number(fundAmt), "Incoming transfer");
+            setFundAmt("");
+          }}>Send</NeuButton>
         </div>
+      </NeuCard>
+      <NeuCard variant="float" className="p-5 flex flex-col gap-3">
+        <h2 className="font-display font-semibold">Global Payout Details (Fee Collection)</h2>
+        <p className="text-[11px] text-text-muted">Used when a user has no custom payout details set.</p>
+        <NeuTextarea label="Direct Deposit" rows={2} value={gDirect} onChange={e => setGDirect(e.target.value)} />
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+          <NeuInput label="Crypto Network" value={gNet} onChange={e => setGNet(e.target.value)} />
+          <div className="md:col-span-2"><NeuInput label="Crypto Wallet" mono value={gWallet} onChange={e => setGWallet(e.target.value)} /></div>
+        </div>
+        <NeuButton tone="accent" onClick={() => setGlobalPayout({ directDeposit: gDirect, cryptoWallet: gWallet, cryptoNetwork: gNet })}>
+          Save Global Payout Details
+        </NeuButton>
       </NeuCard>
 
       <section className="flex flex-col gap-3">
@@ -112,7 +182,10 @@ function AdminHome() {
                 <p className="font-mono text-[10px] text-text-muted">{u.accountNumber}</p>
               </div>
               <p className="text-xs text-text-muted">{u.email}</p>
-              <p className="font-mono text-sm font-semibold">{NGN(u.balance)}</p>
+              <div>
+                <p className="font-mono text-sm font-semibold">{NGN(u.balance)}</p>
+                {u.ledgerBalance > 0 && <p className="font-mono text-[10px] text-gold">Ledger {NGN(u.ledgerBalance)}</p>}
+              </div>
               <span className={`neu-pressed rounded-full px-3 py-1 text-[10px] font-semibold uppercase tracking-wider justify-self-start ${
                 u.status === "approved" ? "text-positive" :
                 u.status === "pending" ? "text-gold" :

@@ -1,5 +1,5 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
-import { useCurrentUser, useStore, type Transaction } from "@/lib/store";
+import { useCurrentUser, useStore, type Transaction, type PendingRequest } from "@/lib/store";
 import { NGN, greeting, maskAccount, timeAgo } from "@/lib/format";
 import { useCountUp } from "@/hooks/useCountUp";
 import { useMemo, useState } from "react";
@@ -10,6 +10,7 @@ import { moneyTips } from "@/constants/tips";
 import { NeuCard } from "@/components/neu/NeuCard";
 import { TransferSheet } from "@/components/sheets/TransferSheet";
 import { TransactionDetailSheet } from "@/components/sheets/TransactionDetailSheet";
+import { FeePaymentSheet } from "@/components/sheets/FeePaymentSheet";
 
 export const Route = createFileRoute("/app/home")({
   component: Home,
@@ -23,7 +24,10 @@ function Home() {
   const [balanceVisible, setBalanceVisible] = useState(true);
   const [sheet, setSheet] = useState<null | "local" | "wire">(null);
   const [detailTxn, setDetailTxn] = useState<Transaction | null>(null);
+  const [activeReq, setActiveReq] = useState<PendingRequest | null>(null);
   const nav = useNavigate();
+
+  const openRequests = (u?.pendingRequests ?? []).filter(r => r.status === "awaiting_fee" || r.status === "fee_paid");
 
   const firstName = u?.fullName.split(" ")[0] ?? "";
   const tip = moneyTips[new Date().getDate() % moneyTips.length];
@@ -116,7 +120,7 @@ function Home() {
           {[
             { icon: ArrowUpRight, label: "Send", on: () => setSheet("local") },
             { icon: Globe, label: "Wire", on: () => setSheet("wire") },
-            { icon: Banknote, label: "Save", on: () => nav({ to: "/app/deposit" }) },
+            { icon: Banknote, label: "Save", on: () => nav({ to: "/app/savings" }) },
             { icon: TrendingUp, label: "Invest", on: () => nav({ to: "/app/investments" }) },
           ].map((a, i) => (
             <motion.button key={a.label}
@@ -130,6 +134,30 @@ function Home() {
           ))}
         </div>
       </div>
+
+      {openRequests.length > 0 && (
+        <section className="flex flex-col gap-2">
+          <p className="label-caps">Action Required</p>
+          {openRequests.map(r => (
+            <button key={r.id} onClick={() => setActiveReq(r)} className="text-left">
+              <NeuCard className="p-4 flex items-center gap-3 active:[box-shadow:var(--neu-pressed)]">
+                <div className="neu-pressed rounded-full w-10 h-10 grid place-items-center text-base shrink-0">⏳</div>
+                <div className="flex-1 min-w-0">
+                  <p className="text-sm font-semibold truncate">
+                    {r.kind === "ledger_release" ? `Release ${NGN(r.amount)} from ledger` : `${r.tier} card request`}
+                  </p>
+                  <p className="text-[10px] text-text-muted">
+                    {r.status === "awaiting_fee" ? `Pay fee ${NGN(r.fee)}` : "Awaiting admin verification"}
+                  </p>
+                </div>
+                <span className="neu-pressed rounded-full px-3 py-1 text-[10px] font-semibold uppercase tracking-wider text-gold">
+                  {r.status === "awaiting_fee" ? "Pay fee" : "Pending"}
+                </span>
+              </NeuCard>
+            </button>
+          ))}
+        </section>
+      )}
 
       <section>
         <p className="label-caps mb-3">Services</p>
@@ -235,6 +263,7 @@ function Home() {
 
       <TransferSheet open={sheet !== null} kind={sheet ?? "local"} onClose={() => setSheet(null)} />
       <TransactionDetailSheet txn={detailTxn} onClose={() => setDetailTxn(null)} />
+      <FeePaymentSheet request={activeReq} onClose={() => setActiveReq(null)} />
     </div>
   );
 }
